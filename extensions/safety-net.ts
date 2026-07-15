@@ -15,6 +15,10 @@ const hardBlockRules: Rule[] = [
   { name: "writing directly to a block device", pattern: /\bdd\b[^\n;|&]*\bof=\/dev\/(?:sd|vd|nvme|hd|mapper\/)/i },
   { name: "fork bomb", pattern: /:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;/ },
   { name: "download-and-execute pipeline", pattern: /\b(?:curl|wget)\b[^\n;|&]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i },
+  {
+    name: "CBM installer or updater, which mutates detected agent configurations",
+    pattern: /\bcodebase-memory-mcp\s+(?:install|update)\b/i,
+  },
 ];
 
 const confirmationRules: Rule[] = [
@@ -30,6 +34,14 @@ const confirmationRules: Rule[] = [
   { name: "container or volume pruning", pattern: /\bdocker\s+(?:system|container|image|volume|network)\s+prune\b/i },
   { name: "service restart or stop", pattern: /\b(?:systemctl\s+(?:restart|stop)|service\s+\S+\s+(?:restart|stop))\b/i },
   { name: "reboot or shutdown", pattern: /\b(?:reboot|shutdown|poweroff|halt)\b/i },
+  {
+    name: "CBM index creation",
+    pattern: /\bcodebase-memory-mcp\s+cli\s+(?:--\S+\s+)*index_repository\b/i,
+  },
+  {
+    name: "CBM state deletion or mutation",
+    pattern: /\bcodebase-memory-mcp\s+(?:uninstall\b|config\s+(?:set|reset)\b|cli\s+(?:--\S+\s+)*(?:delete_project|manage_adr|ingest_traces)\b)/i,
+  },
 ];
 
 function matchingRule(command: string, rules: Rule[]): Rule | undefined {
