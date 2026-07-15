@@ -116,6 +116,9 @@ pi-config/
 │   ├── request-review/
 │   └── commit/
 ├── prompts/
+│   ├── brainstorm.md
+│   ├── prepare-rules.md
+│   ├── survey-codebase.md
 │   ├── build.md
 │   ├── devops.md
 │   ├── plan.md
