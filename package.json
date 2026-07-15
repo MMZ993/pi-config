@@ -1,0 +1,13 @@
+{
+  "name": "@mmz/pi-config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable Pi coding-agent configuration for mmz",
+  "keywords": ["pi-package"],
+  "pi": {
+    "extensions": ["./extensions"],
+    "skills": ["./skills"],
+    "prompts": ["./prompts"],
+    "themes": ["./themes"]
+  }
+}
