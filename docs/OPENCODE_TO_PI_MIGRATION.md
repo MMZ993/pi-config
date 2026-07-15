@@ -108,6 +108,8 @@ Pi should not run this workflow until all of the following are proven:
 pi-config/
 ├── extensions/
 ├── skills/
+│   ├── application-development/
+│   ├── infrastructure-operations/
 │   ├── write-tests/
 │   ├── verify/
 │   ├── debugging/
@@ -116,6 +118,9 @@ pi-config/
 ├── prompts/
 │   ├── build.md
 │   ├── devops.md
+│   ├── plan.md
+│   ├── dev.md
+│   ├── quickfix.md
 │   └── review.md
 ├── themes/
 └── package.json
@@ -133,6 +138,10 @@ The dotfiles-managed `~/.pi/agent/settings.json` remains machine-wide declarativ
 - Use Pi only on low-risk repositories.
 
 ### Phase 1: Safe core workflow
+
+Create the `application-development` skill first. It is the canonical application-development policy used by `/build`, `/plan`, `/dev`, and `/quickfix`; it replaces duplicated OpenCode build-agent instructions without recreating an agent role.
+
+Create the `infrastructure-operations` skill as the canonical safety-first policy used by `/devops` and future infrastructure workflows.
 
 Create and test these Pi skills in order:
 
@@ -153,6 +162,12 @@ The OpenCode `build` and `devops` agents are replaced by prompt templates, not P
 
 Prompt templates provide instructions only. They do not create a separate session, change Pi tool availability, or grant permission for state-changing actions.
 
+The build-aware workflow templates are:
+
+- `/plan [scope]` loads `application-development`, synchronizes td, and writes an implementation-focused `.agents/PLAN.md`.
+- `/dev [instructions]` loads `application-development` and executes the approved plan with a test-first loop, verification, and fresh-session review.
+- `/quickfix [task]` loads `application-development` for one focused change without a session plan.
+
 ### Phase 2: Planning and documentation
 
 Port `brainstorm`, `prepare-rules`, `survey-codebase`, `plan`, `find-docs`, and `firecrawl` as skills or prompts. Existing repository `AGENTS.md` files should remain the primary project-specific instruction source because Pi loads them automatically.
@@ -165,7 +180,20 @@ Do not add tmux-based review subagents yet. Pi does not natively provide subagen
 
 Define repeatable separate-session procedures for exploration. Do not add MCP servers until their Pi integration and permission model have been reviewed.
 
-### Phase 4: Evaluate advanced automation
+### Phase 4: Tmux review worker
+
+After manual fresh-session reviews are reliable, evaluate a tmux-backed review worker implemented as a Pi extension or external wrapper command. It is not a native Pi subagent and must meet all of these requirements:
+
+1. Use a unique tmux session name and never kill a pre-existing session.
+2. Launch only after implementation has stopped changing the workspace.
+3. Snapshot Git status, staged and unstaged diffs, and untracked-file metadata into a unique temporary directory.
+4. Run the reviewer with `--tools read,grep,find,ls`; do not grant `bash`.
+5. Supply the immutable snapshot and `/review` policy as the review context.
+6. Apply a bounded timeout and capture report and error output separately.
+7. Clean up only resources created by that run.
+8. Return the reviewer report to the initiating session without granting the reviewer a mutation path.
+
+### Phase 5: Evaluate advanced automation
 
 Decide whether Beads/td and the `ralph` loop remain OpenCode-specific or receive a separately designed Pi implementation. This is a distinct design project, not a configuration copy.
 
