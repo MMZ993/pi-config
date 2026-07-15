@@ -75,7 +75,7 @@ Pi deliberately does not provide OpenCode-style subagents or plan mode by defaul
 | `commit` | Implemented: `skills/commit/SKILL.md` | High |
 | `session-wrapup` | Implemented: `skills/session-wrapup/SKILL.md` | Medium |
 | `find-docs` | `skills/find-docs/SKILL.md` using `ctx7` | Medium |
-| `firecrawl` | `skills/firecrawl/SKILL.md` using `firecrawl` | Medium |
+| `firecrawl` | Implemented: `skills/firecrawl/SKILL.md` using `firecrawl` | Medium |
 
 Port instructions first, not code. Each skill must be reviewed against Pi's actual tool model before it is enabled.
 
@@ -115,7 +115,8 @@ pi-config/
 │   ├── debugging/
 │   ├── request-review/
 │   ├── commit/
-│   └── session-wrapup/
+│   ├── session-wrapup/
+│   └── firecrawl/
 ├── prompts/
 │   ├── brainstorm.md
 │   ├── prepare-rules.md
@@ -171,7 +172,7 @@ The build-aware workflow templates are:
 
 Implemented: `/brainstorm`, `/prepare-rules`, `/survey-codebase`, and `/plan` are prompts. Brainstorm creates PRDs only for owned applications; codebase survey creates RULES for existing repositories and forks without inventing a PRD. All three planning documents use their open-question sections as resumable state.
 
-Remaining: port `find-docs` and `firecrawl` if their dedicated workflows are still needed. Existing repository `AGENTS.md` files remain the primary project-specific instruction source because Pi loads them automatically.
+Remaining: decide whether `find-docs` needs a dedicated skill; its small Context7 procedure is already embedded in the relevant prompts. Existing repository `AGENTS.md` files remain the primary project-specific instruction source because Pi loads them automatically.
 
 ### Phase 3: Read-only exploration and review
 
