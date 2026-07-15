@@ -86,7 +86,7 @@ Port instructions first, not code. Each skill must be reviewed against Pi's actu
 | Serena | OpenCode MCP server with restricted `opencode` context | Evaluate Pi integration separately; retain the existing Serena context only if Pi's integration model supports it |
 | AiDex | OpenCode MCP server, limited to `explore` | Do not migrate until Pi-side access control is understood |
 | CBM | OpenCode MCP server, limited to `explore` | Do not migrate until Pi-side access control is understood |
-| `cc-safety-net` | Active OpenCode plugin for destructive-command interception | Preserve safety through explicit Pi instructions and evaluate a Pi extension only after review |
+| `cc-safety-net` | Active OpenCode plugin for destructive-command interception | Implemented as `extensions/safety-net.ts`; hard-blocks catastrophic commands and confirms destructive bash commands |
 
 Global denial plus role-specific MCP allowlists is an important current control. Do not replace it with broad unrestricted tool access.
 
@@ -107,6 +107,7 @@ Pi should not run this workflow until all of the following are proven:
 ```text
 pi-config/
 ├── extensions/
+│   └── safety-net.ts
 ├── skills/
 │   ├── application-development/
 │   ├── infrastructure-operations/
@@ -149,6 +150,7 @@ Implemented, pending real-project validation:
 - `application-development` is the canonical policy for `/build`, `/plan`, `/dev`, and `/quickfix`; it replaces duplicated OpenCode build-agent instructions without recreating an agent role.
 - `infrastructure-operations` is the canonical safety-first policy for `/devops` and future infrastructure workflows.
 - `write-tests`, `verify`, `debugging`, `request-review`, `commit`, and `session-wrapup` are available as Pi skills.
+- `safety-net.ts` intercepts agent `bash` calls, hard-blocks catastrophic patterns, requests interactive confirmation for destructive commands, and blocks them in non-interactive sessions.
 
 Acceptance criteria remain: Pi writes a failing test before implementation, runs declared project checks, identifies introduced failures, asks before committing, and never stages secrets or unrelated files.
 
