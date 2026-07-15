@@ -7,6 +7,7 @@ Execute the approved session plan. Load and follow the available `application-de
 
 <preconditions>
 - Require `.agents/PLAN.md`. If it does not exist, stop and ask the user to run `/plan` first.
+- Require initialized td tracking. If it is absent, stop and ask the user to run `/plan`, which initializes td for this workflow.
 - Read `.agents/PLAN.md`, `.agents/RULES.md`, and `.agents/HANDOFF.md` when present.
 - Work through tasks in order. Do not begin the next task until the current task is verified or a blocker has been surfaced.
 </preconditions>

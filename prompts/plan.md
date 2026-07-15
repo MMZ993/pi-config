@@ -7,7 +7,7 @@ Create a focused implementation plan for the current session. Load and follow th
 
 <context>
 - Read `.agents/PRD.md`, `.agents/RULES.md`, and `.agents/HANDOFF.md` when present.
-- Run `td task list` to inspect the existing backlog.
+- `td` is required for this workflow. If the repository does not yet have td tracking, run `td init` before continuing. Then run `td task list` to inspect the existing backlog.
 - Inspect relevant code directly in the current session to understand scope, dependencies, existing patterns, and test conventions.
 - Use `ctx7` when a library, framework, API, syntax, or version decision requires current documentation.
 </context>

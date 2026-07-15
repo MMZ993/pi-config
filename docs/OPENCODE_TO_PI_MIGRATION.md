@@ -55,25 +55,25 @@ Pi deliberately does not provide OpenCode-style subagents or plan mode by defaul
 
 | OpenCode command | Current behavior | Pi migration target |
 |---|---|---|
-| `/brainstorm` | Produces `.agents/PRD.md` through dialogue | Prompt template or `brainstorm` skill |
-| `/prepare-rules` | Derives `.agents/RULES.md`; verifies docs/versions | `prepare-rules` skill using Context7 |
-| `/survey-codebase` | Builds rules for existing projects | `survey-codebase` skill; use read-only session where possible |
+| `/brainstorm` | Produces `.agents/PRD.md` through dialogue | Implemented as a resumable Pi prompt for owned applications |
+| `/prepare-rules` | Derives `.agents/RULES.md`; verifies docs/versions | Implemented as a resumable Pi prompt using Context7 where needed |
+| `/survey-codebase` | Builds rules for existing projects | Implemented as a resumable Pi prompt that surveys directly in Pi |
 | `/prepare-backlog` | Manages Beads/td tasks from PRD | Defer; depends on deciding whether Pi will retain Beads/td |
-| `/plan` | Creates `.agents/PLAN.md` and syncs td | `plan` skill; no native Pi plan mode required |
-| `/dev` | Enforces TDD, verify, review, commit, handoff | Compose independent Pi skills, then validate the sequence |
-| `/quickfix` | Smaller TDD/review/commit workflow | `quickfix` prompt or skill |
+| `/plan` | Creates `.agents/PLAN.md` and syncs td | Implemented as a Pi prompt; no native Pi plan mode required |
+| `/dev` | Enforces TDD, verify, review, commit, handoff | Implemented as a prompt orchestrating independent Pi skills; validate the sequence in use |
+| `/quickfix` | Smaller TDD/review/commit workflow | Retained as a compatibility prompt for the lightweight `/build` workflow |
 | `/ralph-loop` | Unattended plan/execute/recovery loop | Keep on OpenCode initially; migrate last |
 
 ### Skills
 
 | OpenCode skill | Pi target | Priority |
 |---|---|---|
-| `write-tests` | `skills/write-tests/SKILL.md` | High |
-| `verify` | `skills/verify/SKILL.md` | High |
-| `debugging` | `skills/debugging/SKILL.md` | High |
-| `request-review` | `skills/request-review/SKILL.md` | High |
-| `commit` | `skills/commit/SKILL.md` | High |
-| `session-wrapup` | `skills/session-wrapup/SKILL.md` | Medium |
+| `write-tests` | Implemented: `skills/write-tests/SKILL.md` | High |
+| `verify` | Implemented: `skills/verify/SKILL.md` | High |
+| `debugging` | Implemented: `skills/debugging/SKILL.md` | High |
+| `request-review` | Implemented: `skills/request-review/SKILL.md` | High |
+| `commit` | Implemented: `skills/commit/SKILL.md` | High |
+| `session-wrapup` | Implemented: `skills/session-wrapup/SKILL.md` | Medium |
 | `find-docs` | `skills/find-docs/SKILL.md` using `ctx7` | Medium |
 | `firecrawl` | `skills/firecrawl/SKILL.md` using `firecrawl` | Medium |
 
@@ -114,7 +114,8 @@ pi-config/
 │   ├── verify/
 │   ├── debugging/
 │   ├── request-review/
-│   └── commit/
+│   ├── commit/
+│   └── session-wrapup/
 ├── prompts/
 │   ├── brainstorm.md
 │   ├── prepare-rules.md
@@ -129,7 +130,7 @@ pi-config/
 └── package.json
 ```
 
-The dotfiles-managed `~/.pi/agent/settings.json` remains machine-wide declarative configuration. It references this repository at a pinned Git tag or commit alongside pinned third-party packages such as `npm:pi-effort@0.0.5`. Do not manage credentials, trust decisions, sessions, or installed package directories with chezmoi.
+The dotfiles-managed `~/.pi/agent/settings.json` remains machine-wide declarative configuration. When this package is enabled, reference it at a pinned Git tag or commit alongside pinned third-party packages such as `npm:pi-effort@0.0.5`. It is not loaded by dotfiles yet. Do not manage credentials, trust decisions, sessions, or installed package directories with chezmoi.
 
 ## Migration phases
 
@@ -142,19 +143,13 @@ The dotfiles-managed `~/.pi/agent/settings.json` remains machine-wide declarativ
 
 ### Phase 1: Safe core workflow
 
-Create the `application-development` skill first. It is the canonical application-development policy used by `/build`, `/plan`, `/dev`, and `/quickfix`; it replaces duplicated OpenCode build-agent instructions without recreating an agent role.
+Implemented, pending real-project validation:
 
-Create the `infrastructure-operations` skill as the canonical safety-first policy used by `/devops` and future infrastructure workflows.
+- `application-development` is the canonical policy for `/build`, `/plan`, `/dev`, and `/quickfix`; it replaces duplicated OpenCode build-agent instructions without recreating an agent role.
+- `infrastructure-operations` is the canonical safety-first policy for `/devops` and future infrastructure workflows.
+- `write-tests`, `verify`, `debugging`, `request-review`, `commit`, and `session-wrapup` are available as Pi skills.
 
-Create and test these Pi skills in order:
-
-1. `write-tests`
-2. `verify`
-3. `debugging`
-4. `request-review`
-5. `commit`
-
-Acceptance criteria: Pi writes a failing test before implementation, runs the declared project checks, identifies introduced failures, asks before committing, and never stages secrets or unrelated files.
+Acceptance criteria remain: Pi writes a failing test before implementation, runs declared project checks, identifies introduced failures, asks before committing, and never stages secrets or unrelated files.
 
 ### Phase 1a: Role-to-command transition
 
@@ -167,38 +162,41 @@ Prompt templates provide instructions only. They do not create a separate sessio
 
 The build-aware workflow templates are:
 
-- `/plan [scope]` loads `application-development`, synchronizes td, and writes an implementation-focused `.agents/PLAN.md`.
-- `/dev [instructions]` loads `application-development` and executes the approved plan with a test-first loop, verification, and fresh-session review.
-- `/quickfix [task]` loads `application-development` for one focused change without a session plan.
+- `/build [task]` is the lightweight path for one small, well-understood change. It uses proportionate tests and verification, but does not create a plan, td task, review session, handoff, or commit by default.
+- `/plan [scope]` loads `application-development`, initializes td when needed, synchronizes its backlog, and writes an implementation-focused `.agents/PLAN.md`.
+- `/dev [instructions]` requires the approved td-backed plan, then executes it with a test-first loop, verification, skill-driven review, optional commit, and handoff.
+- `/quickfix [task]` is retained as a compatibility prompt for `/build`.
 
 ### Phase 2: Planning and documentation
 
-Port `brainstorm`, `prepare-rules`, `survey-codebase`, `plan`, `find-docs`, and `firecrawl` as skills or prompts. Existing repository `AGENTS.md` files should remain the primary project-specific instruction source because Pi loads them automatically.
+Implemented: `/brainstorm`, `/prepare-rules`, `/survey-codebase`, and `/plan` are prompts. Brainstorm creates PRDs only for owned applications; codebase survey creates RULES for existing repositories and forks without inventing a PRD. All three planning documents use their open-question sections as resumable state.
+
+Remaining: port `find-docs` and `firecrawl` if their dedicated workflows are still needed. Existing repository `AGENTS.md` files remain the primary project-specific instruction source because Pi loads them automatically.
 
 ### Phase 3: Read-only exploration and review
 
-Use a separate Pi session for `/review [focus]` after implementation stops. The review prompt prohibits mutation and reports actionable findings by severity. Pi prompt templates do not enforce tool permissions, so this is a procedural control.
+`/review [focus]` remains available for a manually launched fresh session. It is a procedural read-only control: prompt templates cannot enforce tool permissions.
 
-Do not add tmux-based review subagents yet. Pi does not natively provide subagent orchestration or background command control. A future tmux workflow should be implemented as a reviewed extension, not a skill: it must launch a separate Pi process, provide an immutable review context, capture the result, avoid concurrent writes, and expose no mutation path to the reviewer.
+For implementation workflow reviews, `request-review` now specifies a tmux-backed fresh Pi process with an immutable Git snapshot and `--tools read,grep,find,ls`. It uses `--print --no-session`, so the reviewer exits after writing its report and does not persist a session. This is an instruction-only worker, not a native Pi subagent or an extension; validate it on low-risk repositories before relying on it.
 
 Define repeatable separate-session procedures for exploration. Do not add MCP servers until their Pi integration and permission model have been reviewed.
 
-### Phase 4: Tmux review worker
+### Phase 4: Validate the tmux review worker
 
-After manual fresh-session reviews are reliable, evaluate a tmux-backed review worker implemented as a Pi extension or external wrapper command. It is not a native Pi subagent and must meet all of these requirements:
+Validate the implemented worker against all of these requirements:
 
 1. Use a unique tmux session name and never kill a pre-existing session.
 2. Launch only after implementation has stopped changing the workspace.
 3. Snapshot Git status, staged and unstaged diffs, and untracked-file metadata into a unique temporary directory.
 4. Run the reviewer with `--tools read,grep,find,ls`; do not grant `bash`.
-5. Supply the immutable snapshot and `/review` policy as the review context.
+5. Supply the immutable snapshot and embedded read-only reviewer policy as the review context.
 6. Apply a bounded timeout and capture report and error output separately.
 7. Clean up only resources created by that run.
 8. Return the reviewer report to the initiating session without granting the reviewer a mutation path.
 
 ### Phase 5: Evaluate advanced automation
 
-Decide whether Beads/td and the `ralph` loop remain OpenCode-specific or receive a separately designed Pi implementation. This is a distinct design project, not a configuration copy.
+`td` is a required dependency of the `/plan` → `/dev` workflow and is initialized by `/plan` for a new repository. Decide separately whether the autonomous `ralph` loop remains OpenCode-specific or receives a separately designed Pi implementation.
 
 ## Naming and collision policy
 
