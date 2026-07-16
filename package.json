@@ -3,14 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "description": "Reusable Pi coding-agent configuration for mmz",
-  "keywords": ["pi-package"],
+  "keywords": [
+    "pi-package"
+  ],
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
   },
   "pi": {
-    "extensions": ["./extensions"],
-    "skills": ["./skills"],
-    "prompts": ["./prompts"],
-    "themes": ["./themes"]
+    "extensions": [
+      "./extensions"
+    ],
+    "skills": [
+      "./skills"
+    ],
+    "prompts": [
+      "./prompts"
+    ],
+    "themes": [
+      "./themes"
+    ]
+  },
+  "dependencies": {
+    "typebox": "^1.3.6"
   }
 }
