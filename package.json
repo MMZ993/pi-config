@@ -4,6 +4,9 @@
   "private": true,
   "description": "Reusable Pi coding-agent configuration for mmz",
   "keywords": ["pi-package"],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
   "pi": {
     "extensions": ["./extensions"],
     "skills": ["./skills"],
