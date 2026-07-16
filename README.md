@@ -7,6 +7,7 @@ Reusable, versioned configuration for the Pi coding agent.
 - `extensions/safety-net.ts` — blocks catastrophic shell commands and asks for confirmation before destructive operations.
 - `skills/` — application development, infrastructure operations, tests, verification, debugging, review, commits, handoffs, Firecrawl research, and CBM CLI exploration.
 - `prompts/` — `/brainstorm`, `/prepare-rules`, `/survey-codebase`, `/build`, `/plan`, `/dev`, `/quickfix`, `/devops`, and `/review`.
+- `themes/tokyonight.json` — Tokyo Night color theme for Pi's TUI.
 
 Machine-wide settings and the shared system prompt are managed separately by dotfiles under `~/.pi/agent/`. Credentials, trust decisions, sessions, and installed package directories are not managed here.
 
