@@ -5,6 +5,7 @@ Reusable, versioned configuration for the Pi coding agent.
 ## Contents
 
 - `extensions/safety-net.ts` — blocks catastrophic shell commands and asks for confirmation before destructive operations.
+- `extensions/tokyonight-header.ts` — replaces Pi's startup logo with a Tokyo Night Pi logo while retaining Pi's built-in resource summary; `/default-header` restores Pi's built-in header.
 - `skills/` — application development, infrastructure operations, tests, verification, debugging, review, commits, handoffs, Firecrawl research, and CBM CLI exploration.
 - `prompts/` — `/brainstorm`, `/prepare-rules`, `/survey-codebase`, `/build`, `/plan`, `/dev`, `/quickfix`, `/devops`, and `/review`.
 - `themes/tokyonight.json` — Tokyo Night color theme for Pi's TUI.
