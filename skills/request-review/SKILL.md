@@ -1,11 +1,17 @@
 ---
 name: request-review
-description: Obtain an independent read-only review in a fresh Pi process running in tmux. Use after implementation and verification, before completion or commit.
+description: Obtain an independent read-only review in a fresh Pi process running in tmux for significant or user-requested work. Skip it for straightforward low-risk changes.
 ---
 
 # Request Review
 
 Use a separate Pi process so the reviewer has no implementation-session context and cannot modify the repository.
+
+## When to use this skill
+
+Use an independent review when the user requests one or the change involves a new feature, bug fix, security or access-control behavior, schema or migration work, public API or CLI behavior, non-obvious multi-file logic, or a production infrastructure change with meaningful blast radius.
+
+Do not use an independent review solely because a commit is requested. Skip it for established-pattern one-line configuration edits, CI diagnostic or artifact changes, documentation or formatting changes, narrowly scoped dependency pins, and trivial test-only changes. For skipped reviews, inspect the complete diff locally and run proportionate verification.
 
 ## Preconditions
 

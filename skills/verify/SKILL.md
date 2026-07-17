@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Run and assess the relevant project verification after a code change. Use before declaring a task complete.
+description: Run and assess proportionate project verification after a code change. Use before declaring a task complete.
 ---
 
 # Verify Changes
@@ -9,12 +9,16 @@ description: Run and assess the relevant project verification after a code chang
 
 1. Use the project's declared test, lint, type-check, formatting, and build commands from the active workflow context.
 2. If commands are not documented, inspect the project's standard configuration (`package.json`, `pyproject.toml`, `Makefile`, CI configuration, or equivalent). Do not invent commands.
+3. Match verification cost to change risk:
+   - **Trivial documentation, configuration, CI, or formatting change:** inspect the diff, run `git diff --check`, and validate the changed format or project-specific configuration. Do not run unrelated test suites.
+   - **Focused code change:** run the focused behavior test when practical, plus directly relevant lint, type, format, or build checks.
+   - **Significant or cross-cutting change:** run focused tests and the relevant broader suite.
+   - **Infrastructure as code:** run static validation and the repository's dry-run or check command. Never apply infrastructure as verification.
 
 ## Run checks
 
-- Run the focused test when it helps diagnose the changed behavior, then run the relevant full test suite.
-- Run applicable lint, type checks, formatting checks, and build checks after tests.
-- Read complete failure output, including file paths, line numbers, warnings, and skipped tests.
+- Run only the checks selected by the change-risk tier. A full suite is warranted only for a significant or cross-cutting change, or when project policy explicitly requires it.
+- Read complete output for every executed check, including file paths, line numbers, warnings, and skipped tests.
 
 ## Pre-commit hooks
 
@@ -50,7 +54,8 @@ A task is verified only when the intended behavior is covered and all relevant c
 
 When a check fails:
 
-1. Determine whether it is introduced by the current changes or demonstrably pre-existing.
-2. Report pre-existing failures clearly; do not silently accept them.
-3. For an introduced or unexplained failure, load and follow the `debugging` skill before changing code again.
-4. After a fix, rerun the checks affected by that fix and the relevant broader suite.
+1. First distinguish an invalid command invocation (for example, a bad path, typo, or wrong working directory) from a product verification failure. Correct an invalid invocation and rerun it; do not load `debugging` solely for that.
+2. Determine whether an actual verification failure is introduced by the current changes or demonstrably pre-existing.
+3. Report pre-existing failures clearly; do not silently accept them.
+4. For an introduced or unexplained verification failure, load and follow the `debugging` skill before changing code again.
+5. After a fix, rerun the checks affected by that fix and only the broader checks warranted by the change-risk tier.
