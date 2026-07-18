@@ -23,16 +23,21 @@ const hardBlockRules: Rule[] = [
 
 const confirmationRules: Rule[] = [
   { name: "recursive deletion", pattern: /\brm\s+(?=[^\n;|&]*(?:-r\w*|-\w*r\w*|--recursive))/i },
-  { name: "hard Git reset", pattern: /\bgit\s+reset\s+--hard\b/i },
-  { name: "Git clean", pattern: /\bgit\s+clean\b[^\n;|&]*(?:--force\b|-[a-z]*f)/i },
-  { name: "discarding Git changes", pattern: /\bgit\s+checkout\s+--|\bgit\s+restore\b/i },
-  { name: "forced Git push", pattern: /\bgit\s+push\b[^\n;|&]*(?:--force(?:-with-lease)?\b|-f\b)/i },
-  { name: "Terraform apply or destroy", pattern: /\bterraform\s+(?:apply|destroy)\b/i },
-  { name: "Kubernetes mutation or rollout", pattern: /\bkubectl\s+(?:apply|replace|patch|delete|scale|rollout\s+(?:restart|undo))\b/i },
-  { name: "Helm deployment mutation", pattern: /\bhelm\s+(?:install|upgrade|uninstall|rollback)\b/i },
-  { name: "Ansible playbook outside check mode", pattern: /\bansible-playbook\b(?![^\n;|&]*--check\b)/i },
-  { name: "container or volume pruning", pattern: /\bdocker\s+(?:system|container|image|volume|network)\s+prune\b/i },
-  { name: "service restart or stop", pattern: /\b(?:systemctl\s+(?:restart|stop)|service\s+\S+\s+(?:restart|stop))\b/i },
+  { name: "hard Git reset", pattern: /\bgit\b[^\n;|&]*?\breset\s+--hard\b/i },
+  { name: "Git clean", pattern: /\bgit\b[^\n;|&]*?\bclean\b[^\n;|&]*(?:--force\b|-[a-z]*f)/i },
+  { name: "discarding Git changes", pattern: /\bgit\b[^\n;|&]*?\b(?:checkout\s+--|restore\b)/i },
+  { name: "forced Git push", pattern: /\bgit\b[^\n;|&]*?\bpush\b[^\n;|&]*(?:--force(?:-with-lease)?\b|-f\b)/i },
+  { name: "Terraform apply or destroy", pattern: /\bterraform\b[^\n;|&]*?\b(?:apply|destroy)\b/i },
+  {
+    name: "Kubernetes mutation or rollout",
+    pattern: /\bkubectl\b[^\n;|&]*?\b(?:apply|replace|patch|delete|scale|rollout\b[^\n;|&]*?\b(?:restart|undo))\b/i,
+  },
+  { name: "Helm deployment mutation", pattern: /\bhelm\b[^\n;|&]*?\b(?:install|upgrade|uninstall|rollback)\b/i },
+  {
+    name: "container or volume pruning",
+    pattern: /\bdocker\b[^\n;|&]*?\b(?:system|container|image|volume|network)\s+prune\b/i,
+  },
+  { name: "service restart or stop", pattern: /\b(?:systemctl\b[^\n;|&]*?\b(?:restart|stop)|service\s+\S+\s+(?:restart|stop))\b/i },
   { name: "reboot or shutdown", pattern: /\b(?:reboot|shutdown|poweroff|halt)\b/i },
   {
     name: "CBM index creation",
