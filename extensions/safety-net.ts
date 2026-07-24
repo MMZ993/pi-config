@@ -22,7 +22,7 @@ const hardBlockRules: Rule[] = [
 ];
 
 const confirmationRules: Rule[] = [
-  { name: "recursive deletion", pattern: /\brm\s+(?=[^\n;|&]*(?:-r\w*|-\w*r\w*|--recursive))/i },
+  { name: "recursive deletion", pattern: /(?:^|[\s;|&])rm\s+(?=[^\n;|&]*(?:^|[ \t])(?:--recursive|-[a-z]*r[a-z]*)(?=[ \t]|$))/i },
   { name: "hard Git reset", pattern: /\bgit\b[^\n;|&]*?\breset\s+--hard\b/i },
   { name: "Git clean", pattern: /\bgit\b[^\n;|&]*?\bclean\b[^\n;|&]*(?:--force\b|-[a-z]*f)/i },
   { name: "discarding Git changes", pattern: /\bgit\b[^\n;|&]*?\b(?:checkout\s+--|restore\b)/i },
