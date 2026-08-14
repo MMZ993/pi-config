@@ -7,6 +7,7 @@ Reusable, versioned configuration for the Pi coding agent.
 - `extensions/safety-net.ts` — blocks catastrophic shell commands and asks for confirmation before destructive operations.
 - `extensions/ask-user.ts` — exposes the `ask_user` tool for one necessary multiple-choice clarification, including a custom-answer option.
 - `extensions/tokyonight-header.ts` — replaces Pi's startup logo with a Tokyo Night Pi logo while retaining Pi's built-in resource summary; `/default-header` restores Pi's built-in header.
+- `extensions/subagents/` — delegates bounded tasks to isolated Pi workers in tracked tmux sessions; see `docs/SUBAGENT_EXTENSION.md`.
 - `extensions/bg-terminal/` — runs non-interactive shell commands in tracked detached tmux sessions; see `docs/BG_TERMINAL_EXTENSION.md`.
 - `skills/` — application development, infrastructure operations, tests, verification, debugging, review, commits, handoffs, Firecrawl research, and CBM CLI exploration.
 - `prompts/` — `/brainstorm`, `/prepare-rules`, `/survey-codebase`, `/build`, `/plan`, `/dev`, `/quickfix`, `/devops`, and `/review`.

@@ -18,7 +18,8 @@ This extension delegates one bounded task to an isolated Pi process running insi
 
 ## Safety
 
-- The default child allowlist is `read` only. Callers must explicitly request additional tools.
+- The default child allowlist is `read` only. The only permitted child tools are `read`, `bash`, `edit`, `write`, `fd`, and `rg`; unsupported tool requests are rejected rather than silently filtered.
+- Workers cannot receive `subagent_*` or `bg_*` tools through the child allowlist, and receive an explicit instruction not to delegate again; nested agent chains are prohibited.
 - Workers receive an explicit instruction not to commit, push, deploy, access credentials, or perform external side effects without user approval.
 - The extension never downloads binaries and requires `tmux` and `pi` on `PATH`.
 

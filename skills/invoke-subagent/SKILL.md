@@ -13,7 +13,7 @@ Call `subagent_run` rather than manually launching `pi` in tmux. It creates a tr
 
 - Default to `mode: "blocking"`; use `mode: "background"` only when useful work can continue independently.
 - State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized.
-- Use the narrowest tool allowlist. The default is `read`; add `bash`, `edit`, or `write` only when necessary and explicitly authorized.
+- Use the narrowest tool allowlist. The permitted child tools are `read`, `bash`, `edit`, `write`, `fd`, and `rg`; the default is `read`. Add `bash`, `edit`, or `write` only when necessary and explicitly authorized. `subagent_*` and `bg_*` tools are never available to a child.
 - Use `subagent_status` to inspect a run and `subagent_cancel` to stop it. Tmux attachment is for diagnostics only.
 - Never delegate credential access, commits, pushes, deployments, infrastructure changes, or other external side effects without explicit user approval.
 

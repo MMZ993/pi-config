@@ -23,7 +23,7 @@ const RunSchema = Type.Object({
   mode: Type.Optional(ModeSchema),
   timeoutSeconds: Type.Optional(Type.Integer({ minimum: 30, maximum: 3600 })),
   onTimeout: Type.Optional(TimeoutActionSchema),
-  tools: Type.Optional(Type.Array(Type.String(), { minItems: 1, maxItems: 8 })),
+  tools: Type.Optional(Type.Array(Type.String({ description: "Allowed child tool: read, bash, edit, write, fd, or rg." }), { minItems: 1, maxItems: 8, description: "Optional child allowlist; defaults to read. Subagent and background-job tools are prohibited." })),
   cwd: Type.Optional(Type.String()),
 });
 
@@ -75,7 +75,7 @@ async function startRun(pi: ExtensionAPI, parameters: RunParameters, sessionId: 
   const unknownTools = tools.filter((tool) => !ALLOWED_SUBAGENT_TOOLS.has(tool));
   if (unknownTools.length > 0) throw new Error(`Unknown subagent tools: ${unknownTools.join(", ")}.`);
   if (tools.some((tool) => tool.startsWith("subagent_"))) throw new Error("Subagent tools cannot invoke subagent tools.");
-  const prompt = `You are a delegated subagent in a fresh Pi session.\n\nObjective:\n${parameters.task}\n\nConstraints:\n- Use only the allowed tools.\n- Do not commit, push, deploy, access credentials, or perform external side effects without explicit user approval.\n- Return a concise final report with findings, changed files, and verification.\n`;
+  const prompt = `You are a delegated subagent in a fresh Pi session.\n\nObjective:\n${parameters.task}\n\nConstraints:\n- You are a subagent. Do not invoke, start, or delegate work to another subagent or background job.\n- Use only the allowed tools.\n- Do not commit, push, deploy, access credentials, or perform external side effects without explicit user approval.\n- Return a concise final report with findings, changed files, and verification.\n`;
   const promptPath = join(dir, "prompt.md");
   const scriptPath = join(dir, "run.sh");
   await writeFile(promptPath, prompt, { mode: 0o600 });
