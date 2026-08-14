@@ -12,7 +12,7 @@ description: Run and assess proportionate project verification after a code chan
 3. Match verification cost to change risk:
    - **Trivial documentation, configuration, CI, or formatting change:** inspect the diff, run `git diff --check`, and validate the changed format or project-specific configuration. Do not run unrelated test suites.
    - **Focused code change:** run the focused behavior test when practical, plus directly relevant lint, type, format, or build checks.
-   - **Significant or cross-cutting change:** run focused tests and the relevant broader suite.
+   - **Significant or cross-cutting change:** run focused tests and the relevant broader suite. Request an independent read-only review with the `request-review` skill when the change has non-obvious multi-file logic, security/access behavior, public API/CLI behavior, schema or migration impact, or the user requests review. Do not add review overhead for straightforward low-risk changes.
    - **Infrastructure as code:** run static validation and the repository's dry-run or check command. Never apply infrastructure as verification.
 
 ## Run checks

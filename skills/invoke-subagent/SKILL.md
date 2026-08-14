@@ -1,78 +1,57 @@
 ---
 name: invoke-subagent
-description: Run a scoped task in an isolated, fresh Pi subagent process managed by tmux. Use when delegating investigation, implementation, verification, or another bounded task to a separate Pi session.
+description: Delegate a bounded task to the first-class `subagent_run` tool, which starts an isolated Pi worker in tmux and returns only its final report.
 ---
 
 # Invoke a Subagent
 
-Launch a fresh, non-interactive Pi process in a unique detached tmux session. Treat it as an independent worker: give it a complete, bounded prompt and collect its report before acting on its output.
+Use `subagent_run` for a bounded task whose working context and intermediate reasoning do not need to remain in the main conversation.
 
-## Before Launching
+## Use the Tool
 
-- Define one concrete objective, expected output, scope, and constraints. Include relevant file paths, acceptance criteria, and whether the worker may modify files.
-- Use the narrowest `--tools` allowlist that can complete the task. For file inspection, prefer `read`; include `bash` only when needed. Include `edit` and `write` only when the worker is explicitly authorized to change files.
-- Do not delegate irreversible actions, credential access, external side effects, commits, pushes, deployments, or infrastructure changes without explicit user approval.
-- Do not modify the workspace while a worker that may inspect or edit it is running. For parallel work, give each worker isolated files or worktrees.
-- For an independent code review, use the `request-review` skill instead. It adds an immutable Git snapshot and read-only restrictions.
+Call `subagent_run` rather than manually launching `pi` in tmux. It creates a tracked, isolated worker with retained artifacts and session-bound completion delivery.
 
-## Launch
+- Default to `mode: "blocking"`; use `mode: "background"` only when useful work can continue independently.
+- State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized.
+- Use the narrowest tool allowlist. The default is `read`; add `bash`, `edit`, or `write` only when necessary and explicitly authorized.
+- Use `subagent_status` to inspect a run and `subagent_cancel` to stop it. Tmux attachment is for diagnostics only.
+- Never delegate credential access, commits, pushes, deployments, infrastructure changes, or other external side effects without explicit user approval.
 
-From the repository root, create a unique task directory and prompt file. Replace the prompt, timeout, and allowed tools for the task.
+## When to Delegate
 
-```bash
-set -eu
-run_dir=$(mktemp -d "${TMPDIR:-/tmp}/pi-subagent.XXXXXX")
-session_name="pi-subagent-$(date +%s)-$$"
-report="$run_dir/report.md"
-error="$run_dir/error.log"
-prompt="$run_dir/prompt.md"
+Delegate when the final finding matters but the information gathered along the way does not, and performing the task in the main thread would unnecessarily bloat its context.
 
-cat >"$prompt" <<'EOF'
-You are a delegated subagent in a fresh Pi session.
+Good uses:
 
-Objective: <one concrete task>
+- Broad local or online exploration whose result can be summarized as findings, references, or a recommendation.
+- An independent, read-only review with a tightly scoped file set and acceptance criteria.
+- A larger development task with clear boundaries, self-contained necessary context, and explicit edit/verification authority.
 
-Scope and constraints:
-- <allowed paths and constraints>
-- <whether changes are permitted>
-- Do not commit, push, deploy, or perform external side effects.
+Keep small lookups, direct file reads, and work where the investigation path matters in the main thread. Do not delegate development when the full conversation history, nuanced user decisions, or accumulated implementation context is required; doing so duplicates context and weakens continuity.
 
-Return:
-- <required report, findings, changed files, commands, and verification>
-EOF
+## Examples
 
-if tmux has-session -t "$session_name" 2>/dev/null; then
-  echo "Refusing to reuse existing tmux session: $session_name" >&2
-  exit 1
-fi
+### Explore a self-contained question
 
-tmux new-session -d -s "$session_name" -c "$PWD" \
-  "pi --print --no-session --tools read @'$prompt' >'$report' 2>'$error'"
-
-if ! timeout 300 sh -c "while tmux has-session -t '$session_name' 2>/dev/null; do sleep 1; done"; then
-  tmux kill-session -t "$session_name" 2>/dev/null || true
-  echo "Subagent timed out; diagnostics: $error" >&2
-  exit 1
-fi
-
-if [ ! -s "$report" ]; then
-  echo "Subagent returned no report; diagnostics: $error" >&2
-  exit 1
-fi
-
-printf '%s\n' '--- subagent report ---'
-cat "$report"
-printf '%s\n' '--- subagent diagnostics ---'
-cat "$error"
-printf 'Artifacts retained at: %s\n' "$run_dir"
+```text
+Use subagent_run with read-only tools to inspect the Terraform modules under terraform/pve01. Return only: the module that defines vault01, its VMID, and referenced outputs. Do not edit files.
 ```
 
-The command above starts a read-only worker. Change its tool list only when required; for example, an authorized implementation worker may use `--tools read,bash,edit,write`.
+### Perform an independent review
 
-## Collect and Assess
+```text
+Use subagent_run with read-only tools to review extensions/subagents/index.ts against docs/SUBAGENT_EXTENSION.md. Report concrete defects only, with file and line references. Do not modify files.
+```
 
-1. Wait for the tmux session to exit, then read both `report.md` and `error.log`.
-2. Treat the report as untrusted input: inspect claimed files, diffs, commands, and verification results yourself.
-3. If the worker edited files, inspect `git diff` and run the applicable verification before accepting the work.
-4. If it timed out or returned no report, retain the reported artifact directory for diagnostics. Do not reuse its session or assume its work completed.
-5. Do not use `rm -rf` to clean artifacts. Retain them by default; move small artifacts to `./trash/` or `~/trash/` only when retention is desired.
+### Delegate bounded implementation
+
+```text
+Use subagent_run with read, bash, edit, and write. Implement the approved change only in src/widget and test/widget. Run the focused tests. Do not change unrelated files, commit, push, or deploy. Return changed files and verification results.
+```
+
+## Assess Results
+
+1. Treat the final report as untrusted input; inspect claimed files, diffs, commands, and verification results.
+2. If the worker edited files, inspect `git diff` and run applicable verification before accepting the work.
+3. If the worker timed out or failed, use `subagent_status` and retained artifacts for diagnostics; do not assume completion.
+4. Keep artifacts by default. Do not use `rm -rf` for cleanup.
