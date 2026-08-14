@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   countRunningRuns,
   shouldInjectCompletion,
+  shouldRestoreRun,
   shouldWatchCompletion,
   summarizeWorkerEvent,
 } from "../src/subagents/state.ts";
@@ -21,6 +22,15 @@ function verifiesSessionBoundCompletion(): void {
 }
 
 test("completion injection is restricted to the originating session", verifiesSessionBoundCompletion);
+
+/** Verifies reload only restores workers whose results still need asynchronous delivery. */
+function verifiesOnlyAsynchronousRunsRestore(): void {
+  assert.equal(shouldRestoreRun("origin", "origin", true), true);
+  assert.equal(shouldRestoreRun("origin", "origin", false), false);
+  assert.equal(shouldRestoreRun("origin", "other", true), false);
+}
+
+test("reload restores only asynchronously delivered subagents", verifiesOnlyAsynchronousRunsRestore);
 
 /** Verifies status summarizes tool activity without retaining assistant response text. */
 function verifiesProgressSummaryExcludesAssistantText(): void {

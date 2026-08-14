@@ -6,7 +6,7 @@ import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import { formatIdCall, formatSubagentRunCall } from "../../src/tool-rendering/call-labels.ts";
 import { createToolResultPreview, getToolResultText } from "../../src/tool-rendering/result-preview.ts";
-import { countRunningRuns, shouldInjectCompletion, shouldWatchCompletion, summarizeWorkerEvent } from "../../src/subagents/state.ts";
+import { countRunningRuns, shouldInjectCompletion, shouldRestoreRun, shouldWatchCompletion, summarizeWorkerEvent } from "../../src/subagents/state.ts";
 
 /** The default maximum wait for a blocking worker. */
 const DEFAULT_TIMEOUT_SECONDS = 300;
@@ -37,7 +37,7 @@ const RunIdSchema = Type.Object({ runId: Type.String() });
 type RunParameters = Static<typeof RunSchema>;
 
 /** Stores the durable artifacts and ownership of one worker. */
-type Run = { id: string; tmux: string; dir: string; sessionId: string; started: number; tools: string[]; status: string };
+type Run = { id: string; tmux: string; dir: string; sessionId: string; started: number; tools: string[]; status: string; notifyOnCompletion?: boolean };
 
 /** Narrows a persisted custom session entry to a subagent run record. */
 function isRun(value: unknown): value is Run {
@@ -84,7 +84,7 @@ async function startRun(pi: ExtensionAPI, parameters: RunParameters, sessionId: 
   await writeFile(promptPath, prompt, { mode: 0o600 });
   const command = ["pi", "--mode", "json", "--print", "--no-session", "--tools", tools.join(","), `@${promptPath}`].map(shellQuote).join(" ");
   await writeFile(scriptPath, `#!/bin/sh\n${command} >${shellQuote(join(dir, "events.jsonl"))} 2>${shellQuote(join(dir, "stderr.log"))}\nprintf '%s' $? >${shellQuote(join(dir, "exit-code"))}\n`, { mode: 0o700 });
-  const run = { id, tmux: id, dir, sessionId, started: Date.now(), tools, status: "running" };
+  const run = { id, tmux: id, dir, sessionId, started: Date.now(), tools, status: "running", notifyOnCompletion: parameters.mode === "background" };
   const created = await pi.exec("tmux", ["new-session", "-d", "-s", run.tmux, "-c", parameters.cwd ?? cwd, "/bin/sh", scriptPath], { timeout: 5_000 });
   if (created.code !== 0) throw new Error(`Failed to start tmux worker: ${created.stderr.trim()}`);
   return run;
@@ -132,7 +132,11 @@ export default function subagents(pi: ExtensionAPI): void {
         if (signal?.aborted || Date.now() >= deadline) {
           if ((parameters.onTimeout ?? "terminate") === "terminate") await pi.exec("tmux", ["kill-session", "-t", run.tmux], { timeout: 5_000 });
           run.status = "timed_out"; updateStatus(ctx);
-          if ((parameters.onTimeout ?? "terminate") === "keep_running") void watchRun(run, ctx);
+          if ((parameters.onTimeout ?? "terminate") === "keep_running") {
+            run.notifyOnCompletion = true;
+            pi.appendEntry("subagent_run", run);
+            void watchRun(run, ctx);
+          }
           return { content: [{ type: "text", text: `Subagent ${run.id} timed out (${parameters.onTimeout ?? "terminate"}).` }], details: run };
         }
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -154,10 +158,11 @@ export default function subagents(pi: ExtensionAPI): void {
     for (const entry of entries) {
       if (entry.type !== "custom" || entry.customType !== "subagent_run" || !isRun(entry.data)) continue;
       const run = entry.data;
-      if (!shouldInjectCompletion(run.sessionId, ctx.sessionManager.getSessionId()) || delivered.has(run.id)) continue;
+      if (!shouldRestoreRun(run.sessionId, ctx.sessionManager.getSessionId(), run.notifyOnCompletion === true) || delivered.has(run.id)) continue;
       runs.set(run.id, run);
       if (await refreshStatus(run)) continue;
-      pi.sendMessage({ customType: "subagent_completion", content: `Subagent ${run.id} completed:\n${await finalReport(run)}`, display: true }, { deliverAs: "nextTurn" });
+      const outcome = run.status === "completed" ? "completed" : "failed";
+      pi.sendMessage({ customType: "subagent_completion", content: `Subagent ${run.id} ${outcome}:\n${await finalReport(run)}`, display: true }, { deliverAs: "nextTurn" });
       pi.appendEntry("subagent_completion", { runId: run.id });
     }
   });
