@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
+import { Text } from "@earendil-works/pi-tui";
+import { formatBackgroundStartCall, formatIdCall } from "../../src/tool-rendering/call-labels.ts";
 import { completionNeedsDelivery, countRunningJobs, shouldDeliverCompletion, shouldRestoreJob, shouldWatchRestoredJob } from "../../src/bg-terminal/state.ts";
 
 const StartSchema = Type.Object({
@@ -59,6 +61,7 @@ export default function backgroundTerminal(pi: ExtensionAPI): void {
   };
 
   pi.registerTool({ name: "bg_start", label: "Start Background Job", description: "Run a non-interactive shell command in detached tmux with retained /tmp artifacts.", parameters: StartSchema,
+    renderCall(parameters, theme) { return new Text(theme.fg("toolTitle", theme.bold(formatBackgroundStartCall(parameters))), 0, 0); },
     async execute(_id, parameters, _signal, _update, ctx) {
       if (parameters.command.includes("\0")) throw new Error("Command must not contain a NUL byte.");
       if (!ctx.hasUI) throw new Error("Background commands require an interactive confirmation.");
@@ -78,10 +81,13 @@ export default function backgroundTerminal(pi: ExtensionAPI): void {
       return { content: [{ type: "text", text: `Started ${job.id} (${job.title}). Artifacts: ${job.dir}` }], details: job };
     } });
   pi.registerTool({ name: "bg_status", label: "Background Job Status", description: "Check a background terminal job and its retained artifacts.", parameters: JobIdSchema,
+    renderCall(parameters, theme) { return new Text(theme.fg("toolTitle", theme.bold(formatIdCall("bg_status", parameters.jobId))), 0, 0); },
     async execute(_id, parameters, _signal, _update, ctx) { const job = getJob(parameters.jobId); await refresh(job); updateFooter(ctx); return { content: [{ type: "text", text: jobLine(job) }], details: job }; } });
   pi.registerTool({ name: "bg_list", label: "List Background Jobs", description: "List background terminal jobs from this Pi session.", parameters: Type.Object({}),
+    renderCall(_parameters, theme) { return new Text(theme.fg("toolTitle", theme.bold("bg_list")), 0, 0); },
     async execute(_id, _parameters, _signal, _update, ctx) { for (const job of jobs.values()) await refresh(job); updateFooter(ctx); const text = [...jobs.values()].map(jobLine).join("\n") || "No background jobs."; return { content: [{ type: "text", text }], details: [...jobs.values()] }; } });
   pi.registerTool({ name: "bg_kill", label: "Kill Background Job", description: "Terminate a running background terminal tmux session.", parameters: JobIdSchema,
+    renderCall(parameters, theme) { return new Text(theme.fg("toolTitle", theme.bold(formatIdCall("bg_kill", parameters.jobId))), 0, 0); },
     async execute(_id, parameters, _signal, _update, ctx) {
       const job = getJob(parameters.jobId);
       job.cancellationPending = true;

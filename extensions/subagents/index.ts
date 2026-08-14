@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
+import { Text } from "@earendil-works/pi-tui";
+import { formatIdCall, formatSubagentRunCall } from "../../src/tool-rendering/call-labels.ts";
 import { countRunningRuns, shouldInjectCompletion, shouldWatchCompletion, summarizeWorkerEvent } from "../../src/subagents/state.ts";
 
 /** The default maximum wait for a blocking worker. */
@@ -112,6 +114,9 @@ export default function subagents(pi: ExtensionAPI): void {
     }
   };
   pi.registerTool({ name: "subagent_run", label: "Run Subagent", description: "Run one bounded Pi subagent in tmux. Blocking is the default and returns only its final report.", promptSnippet: "Delegate a bounded task to an isolated Pi subagent.", promptGuidelines: ["Use subagent_run only for a concrete bounded task; default to read-only tools and do not delegate commits, deployments, or credential access."], parameters: RunSchema,
+    renderCall(parameters, theme) {
+      return new Text(theme.fg("toolTitle", theme.bold(formatSubagentRunCall(parameters))), 0, 0);
+    },
     async execute(_id, parameters, signal, _update, ctx) {
       const run = await startRun(pi, parameters, ctx.sessionManager.getSessionId(), ctx.cwd); runs.set(run.id, run); pi.appendEntry("subagent_run", run); updateStatus(ctx);
       if (shouldWatchCompletion(parameters.mode ?? "blocking", false)) {
@@ -133,8 +138,10 @@ export default function subagents(pi: ExtensionAPI): void {
       return { content: [{ type: "text", text: await finalReport(run) }], details: run };
     } });
   pi.registerTool({ name: "subagent_status", label: "Subagent Status", description: "Check a tmux subagent without adding its intermediate output to context.", parameters: RunIdSchema,
+    renderCall(parameters, theme) { return new Text(theme.fg("toolTitle", theme.bold(formatIdCall("subagent_status", parameters.runId))), 0, 0); },
     async execute(_id, parameters, _signal, _update, ctx) { const run = runs.get(parameters.runId); if (!run) throw new Error("Unknown subagent run."); const running = await refreshStatus(run); updateStatus(ctx); const events = await readFile(join(run.dir, "events.jsonl"), "utf8").catch(() => ""); const last = events.trim().split("\n").reverse().map((line) => { try { return summarizeWorkerEvent(JSON.parse(line)); } catch { return undefined; } }).find(Boolean); const elapsed = Math.floor((Date.now() - run.started) / 1000); return { content: [{ type: "text", text: `${run.id}: ${running ? "running" : run.status}${last ? ` (${last})` : ""}; ${elapsed}s elapsed\nartifacts: ${run.dir}\ntmux attach -t ${run.tmux}` }], details: run }; } });
   pi.registerTool({ name: "subagent_cancel", label: "Cancel Subagent", description: "Terminate a running tmux subagent.", parameters: RunIdSchema,
+    renderCall(parameters, theme) { return new Text(theme.fg("toolTitle", theme.bold(formatIdCall("subagent_cancel", parameters.runId))), 0, 0); },
     async execute(_id, parameters, _signal, _update, ctx) { const run = runs.get(parameters.runId); if (!run) throw new Error("Unknown subagent run."); await pi.exec("tmux", ["kill-session", "-t", run.tmux], { timeout: 5_000 }); run.status = "cancelled"; ctx.ui.setStatus("subagents", undefined); return { content: [{ type: "text", text: `Cancelled ${run.id}` }], details: run }; } });
   pi.on("session_start", async (_event, ctx) => {
     sessionClosing = false;

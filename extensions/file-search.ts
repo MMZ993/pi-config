@@ -21,6 +21,8 @@ import {
   buildFdArguments,
   buildRgArguments,
 } from "../src/file-search/arguments.ts";
+import { formatFdCall, formatRgCall } from "../src/tool-rendering/call-labels.ts";
+import { Text } from "@earendil-works/pi-tui";
 
 /** Identifies the system-managed binary to execute. */
 type SearchTool = keyof typeof SEARCH_BINARIES;
@@ -97,6 +99,9 @@ export default function fileSearch(pi: ExtensionAPI): void {
       "Use fd instead of bash when discovering files or directories by name, extension, or glob.",
     ],
     parameters: FdSchema,
+    renderCall(parameters, theme) {
+      return new Text(theme.fg("toolTitle", theme.bold(formatFdCall(parameters))), 0, 0);
+    },
     async execute(_toolCallId, parameters: FdParameters, signal) {
       const output = await runSearch(pi, "fd", buildFdArguments(parameters), signal);
       if (!output) {
@@ -116,6 +121,9 @@ export default function fileSearch(pi: ExtensionAPI): void {
       "Use rg instead of bash when searching file contents; use fd when searching file names.",
     ],
     parameters: RgSchema,
+    renderCall(parameters, theme) {
+      return new Text(theme.fg("toolTitle", theme.bold(formatRgCall(parameters))), 0, 0);
+    },
     async execute(_toolCallId, parameters: RgParameters, signal) {
       const output = await runSearch(pi, "rg", buildRgArguments(parameters), signal);
       if (!output) {
