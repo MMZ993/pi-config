@@ -22,6 +22,7 @@ import {
   buildRgArguments,
 } from "../src/file-search/arguments.ts";
 import { formatFdCall, formatRgCall } from "../src/tool-rendering/call-labels.ts";
+import { createToolResultPreview, getToolResultText } from "../src/tool-rendering/result-preview.ts";
 import { Text } from "@earendil-works/pi-tui";
 
 /** Identifies the system-managed binary to execute. */
@@ -102,6 +103,9 @@ export default function fileSearch(pi: ExtensionAPI): void {
     renderCall(parameters, theme) {
       return new Text(theme.fg("toolTitle", theme.bold(formatFdCall(parameters))), 0, 0);
     },
+    renderResult(result, options, theme) {
+      return createToolResultPreview(getToolResultText(result.content), options.expanded, "head", theme);
+    },
     async execute(_toolCallId, parameters: FdParameters, signal) {
       const output = await runSearch(pi, "fd", buildFdArguments(parameters), signal);
       if (!output) {
@@ -123,6 +127,9 @@ export default function fileSearch(pi: ExtensionAPI): void {
     parameters: RgSchema,
     renderCall(parameters, theme) {
       return new Text(theme.fg("toolTitle", theme.bold(formatRgCall(parameters))), 0, 0);
+    },
+    renderResult(result, options, theme) {
+      return createToolResultPreview(getToolResultText(result.content), options.expanded, "head", theme);
     },
     async execute(_toolCallId, parameters: RgParameters, signal) {
       const output = await runSearch(pi, "rg", buildRgArguments(parameters), signal);

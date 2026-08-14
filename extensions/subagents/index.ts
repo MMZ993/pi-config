@@ -5,6 +5,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import { formatIdCall, formatSubagentRunCall } from "../../src/tool-rendering/call-labels.ts";
+import { createToolResultPreview, getToolResultText } from "../../src/tool-rendering/result-preview.ts";
 import { countRunningRuns, shouldInjectCompletion, shouldWatchCompletion, summarizeWorkerEvent } from "../../src/subagents/state.ts";
 
 /** The default maximum wait for a blocking worker. */
@@ -116,6 +117,9 @@ export default function subagents(pi: ExtensionAPI): void {
   pi.registerTool({ name: "subagent_run", label: "Run Subagent", description: "Run one bounded Pi subagent in tmux. Blocking is the default and returns only its final report.", promptSnippet: "Delegate a bounded task to an isolated Pi subagent.", promptGuidelines: ["Use subagent_run only for a concrete bounded task; default to read-only tools and do not delegate commits, deployments, or credential access."], parameters: RunSchema,
     renderCall(parameters, theme) {
       return new Text(theme.fg("toolTitle", theme.bold(formatSubagentRunCall(parameters))), 0, 0);
+    },
+    renderResult(result, options, theme) {
+      return createToolResultPreview(getToolResultText(result.content), options.expanded, "head", theme);
     },
     async execute(_id, parameters, signal, _update, ctx) {
       const run = await startRun(pi, parameters, ctx.sessionManager.getSessionId(), ctx.cwd); runs.set(run.id, run); pi.appendEntry("subagent_run", run); updateStatus(ctx);
