@@ -18,6 +18,23 @@ description: Apply established application-development conventions when planning
 - Do not assume a dependency is available; verify that it is already declared or used before relying on it.
 - Create files only when they will be immediately and properly integrated into the codebase.
 
+## Design and maintainability
+
+- Keep each file small and focused. Split files that have grown beyond one cohesive responsibility into appropriately named modules.
+- Give each function, method, and class one purpose. Extract independently changing or separately testable behavior instead of accumulating branches and modes.
+- Keep static data, configuration, schemas, and lookup tables separate from executable logic.
+- Prefer code that is easy to trace locally: make control flow, data transformations, state changes, and side effects explicit.
+- Place I/O, framework calls, and other side effects at the boundaries; keep core decision logic deterministic where practical.
+- Choose the least complex adequate design. Duplication is acceptable when abstraction would obscure behavior; avoid inheritance, recursion, and patterns that add indirection unless they provide a clear, present benefit.
+- Define and enforce input, output, error, and ownership boundaries at module interfaces. Do not let invalid or ambiguous state flow deeper into the system.
+- Preserve existing behavior deliberately: when changing unclear legacy behavior, first characterize it with tests or documented examples.
+
+## Documentation before implementation
+
+- Write the documentation comment before implementing every function, method, class, module, and other meaningful code unit.
+- Each comment must state the unit's purpose, inputs or arguments, outputs or return value, side effects or mutations, errors, and important constraints when applicable.
+- Keep documentation aligned with the desired behavior and update it with the implementation; do not leave comments that merely restate syntax.
+
 ## Change discipline
 
 - Implement only what the task requires.
