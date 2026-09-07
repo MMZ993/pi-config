@@ -9,11 +9,11 @@ Use the local `codebase-memory-mcp cli` interface only. Do not start its MCP ser
 
 ## Safety and scope
 
-- Treat the CLI as read-only unless the user explicitly confirms indexing.
+- Indexing is agent-driven: run `index_repository` autonomously when the project is not indexed or the index is stale; no user confirmation is needed for indexing itself. It writes only a local index under `~/.cache/codebase-memory-mcp/`.
+- Use `moderate` mode by default. Use `full` only when semantic/similarity edges are necessary.
 - Never run `codebase-memory-mcp install`, `uninstall`, or `update`. These commands can modify detected agent configurations. CBM updates are managed through dotfiles.
 - Never run `codebase-memory-mcp config set`, `config reset`, `delete_project`, `manage_adr`, or `ingest_traces` unless the user explicitly requests that exact operation.
 - Do not enable `--ui`, do not set `persistence`, and do not create or commit `.codebase-memory/` artifacts unless explicitly requested.
-- `index_repository` writes a local index under `~/.cache/codebase-memory-mcp/`; ask for confirmation before running it. Use `moderate` mode by default. Use `full` only when semantic/similarity edges are necessary.
 - Prefer CLI flags. Passing raw JSON arguments is deprecated. Add `--json` when structured output is useful.
 
 ## Select the project
@@ -25,11 +25,13 @@ codebase-memory-mcp cli list_projects --json
 codebase-memory-mcp cli index_status --project "<project-name>" --json
 ```
 
-If the current repository is not indexed, explain that indexing is needed and ask before running:
+If the current repository is not indexed (or `index_status` shows it missing or stale), run the indexing yourself and inform the user that you did:
 
 ```bash
 codebase-memory-mcp cli index_repository --repo-path "$PWD" --mode moderate --json
 ```
+
+When to re-index: the project is missing from `list_projects`, `index_status` reports the repository as changed since the last index, or query results reference code that no longer matches the working tree. After large accepted changes, offer to refresh the index but do not re-index repeatedly within one session.
 
 ## Exploration workflow
 
