@@ -10,7 +10,9 @@ Reusable, versioned configuration for the Pi coding agent.
 - `extensions/system-guidance.ts` and `system-prompt/APPEND_SYSTEM.md` — append package-owned global operating guidance without replacing Pi or project instructions.
 - `extensions/subagents/` — delegates bounded tasks to isolated Pi workers in tracked tmux sessions; see `docs/SUBAGENT_EXTENSION.md`.
 - `extensions/bg-terminal/` — runs non-interactive shell commands in tracked detached tmux sessions; see `docs/BG_TERMINAL_EXTENSION.md`.
-- `skills/` — application development, infrastructure operations, tests, verification, debugging, review, commits, handoffs, Firecrawl research, and CBM CLI exploration.
+- `extensions/copy-all.ts` — adds `/copy-all` to copy the active session's readable conversation transcript to the clipboard.
+- `extensions/file-search.ts` — replaces Pi's built-in `fd` and `rg` tools with system-managed binaries, hardened argument handling, and compact call/result rendering.
+- `skills/` — application development, infrastructure operations, tests, verification, debugging, review, commits, handoffs, Firecrawl research, CBM CLI exploration, and cheap-model exploration via subagents.
 - `prompts/` — `/brainstorm`, `/prepare-rules`, `/survey-codebase`, `/build`, `/plan`, `/dev`, `/quickfix`, `/devops`, and `/review`.
 - `themes/tokyonight.json` — Tokyo Night color theme for Pi's TUI.
 
