@@ -12,7 +12,12 @@ Use this workflow for an existing repository or fork. It creates RULES from evid
 </context_and_resumption>
 
 <survey>
-Pi has no explore subagent. Inspect directly and incrementally:
+Route broad exploration away from the main thread when practical:
+
+- If the project is indexed (or indexing it is worthwhile), use the `codebase-memory` skill for architecture discovery, structural search, and impact analysis.
+- Otherwise, delegate broad searching to a cheap-model subagent via the `explore` and `invoke-subagent` skills; keep only the summarized findings in this session.
+
+Then inspect directly and incrementally for anything that needs accumulated context or verification against source files:
 
 1. List the top-level structure and locate build, dependency, formatter, test, CI, and deployment configuration.
 2. Identify languages, runtime versions, package managers, and significant declared or locked dependencies.
