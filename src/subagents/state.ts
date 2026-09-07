@@ -21,6 +21,25 @@ export function shouldWatchCompletion(mode: "blocking" | "background", continued
   return mode === "background" || continuedAfterTimeout;
 }
 
+/** Resolves the child worker model, defaulting to the main session's active model. */
+export function resolveModelSelection(
+  parameters: { model?: string; provider?: string },
+  activeModel: { id: string; provider: string } | undefined,
+): { provider: string; modelId: string } {
+  const requested = parameters.model?.trim() ?? "";
+  let provider = parameters.provider?.trim() ?? "";
+  let modelId = requested;
+  const separator = requested.indexOf("/");
+  if (separator > 0) {
+    provider = provider || requested.slice(0, separator);
+    modelId = requested.slice(separator + 1);
+  }
+  if (!modelId && activeModel) modelId = activeModel.id;
+  if (!provider && activeModel) provider = activeModel.provider;
+  if (!modelId || !provider) throw new Error("Unable to resolve a model for the subagent; pass model or provider explicitly.");
+  return { provider, modelId };
+}
+
 /** Counts workers that should be shown as active in the shared TUI status. */
 export function countRunningRuns(statuses: string[]): number {
   return statuses.filter((status) => status === "running").length;

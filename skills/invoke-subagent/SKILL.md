@@ -12,6 +12,10 @@ Use `subagent_run` for a bounded task whose working context and intermediate rea
 Call `subagent_run` rather than manually launching `pi` in tmux. It creates a tracked, isolated worker with retained artifacts and session-bound completion delivery.
 
 - Default to `mode: "blocking"`; use `mode: "background"` only when useful work can continue independently.
+- Pick the child model to fit the task; it defaults to the main session's active model.
+  - Straightforward, mechanical work (file search, exploration, simple lookups, formatting checks): use a cheap, fast model, e.g. `model: "openai-codex/gpt-5.6-luna"` or whatever inexpensive model the available catalogue offers.
+  - Complex reasoning, cross-file analysis, or implementation work: keep the default model or choose a capable one explicitly via `model: "provider/model-id"`.
+  - Use `provider` only when a bare model id is ambiguous across providers.
 - State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized.
 - Use the narrowest tool allowlist. The permitted child tools are `read`, `bash`, `edit`, `write`, `fd`, and `rg`; the default is `read`. Add `bash`, `edit`, or `write` only when necessary and explicitly authorized. `subagent_*` and `bg_*` tools are never available to a child.
 - Use `subagent_status` to inspect a run and `subagent_cancel` to stop it. Tmux attachment is for diagnostics only.
@@ -34,7 +38,7 @@ Keep small lookups, direct file reads, and work where the investigation path mat
 ### Explore a self-contained question
 
 ```text
-Use subagent_run with read-only tools to inspect the Terraform modules under terraform/pve01. Return only: the module that defines vault01, its VMID, and referenced outputs. Do not edit files.
+Use subagent_run with read-only tools and a cheap model (openai-codex/gpt-5.6-luna) to inspect the Terraform modules under terraform/pve01. Return only: the module that defines vault01, its VMID, and referenced outputs. Do not edit files.
 ```
 
 ### Perform an independent review

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   countRunningRuns,
+  resolveModelSelection,
   shouldInjectCompletion,
   shouldRestoreRun,
   shouldWatchCompletion,
@@ -62,3 +63,15 @@ function verifiesCompletionWatchModes(): void {
 }
 
 test("background and continued workers are monitored", verifiesCompletionWatchModes);
+
+/** Verifies child model resolution defaults to the active session model. */
+function verifiesModelSelectionDefaultsAndOverrides(): void {
+  const active = { id: "glm-4.6", provider: "zai" };
+  assert.deepEqual(resolveModelSelection({}, active), { provider: "zai", modelId: "glm-4.6" });
+  assert.deepEqual(resolveModelSelection({ model: "openai-codex/gpt-5.6-luna" }, active), { provider: "openai-codex", modelId: "gpt-5.6-luna" });
+  assert.deepEqual(resolveModelSelection({ model: "gpt-5.6-luna", provider: "openai-codex" }, active), { provider: "openai-codex", modelId: "gpt-5.6-luna" });
+  assert.deepEqual(resolveModelSelection({ provider: "openai-codex" }, active), { provider: "openai-codex", modelId: "glm-4.6" });
+  assert.throws(() => resolveModelSelection({}, undefined), /Unable to resolve a model/);
+}
+
+test("model selection defaults to the active session model", verifiesModelSelectionDefaultsAndOverrides);

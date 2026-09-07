@@ -6,7 +6,7 @@ import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import { formatIdCall, formatSubagentRunCall } from "../../src/tool-rendering/call-labels.ts";
 import { createToolResultPreview, getToolResultText } from "../../src/tool-rendering/result-preview.ts";
-import { countRunningRuns, shouldInjectCompletion, shouldRestoreRun, shouldWatchCompletion, summarizeWorkerEvent } from "../../src/subagents/state.ts";
+import { countRunningRuns, resolveModelSelection, shouldInjectCompletion, shouldRestoreRun, shouldWatchCompletion, summarizeWorkerEvent } from "../../src/subagents/state.ts";
 
 /** The default maximum wait for a blocking worker. */
 const DEFAULT_TIMEOUT_SECONDS = 300;
@@ -27,6 +27,8 @@ const RunSchema = Type.Object({
   timeoutSeconds: Type.Optional(Type.Integer({ minimum: 30, maximum: 3600 })),
   onTimeout: Type.Optional(TimeoutActionSchema),
   tools: Type.Optional(Type.Array(Type.String({ description: "Allowed child tool: read, bash, edit, write, fd, or rg." }), { minItems: 1, maxItems: 8, description: "Optional child allowlist; defaults to read. Subagent and background-job tools are prohibited." })),
+  model: Type.Optional(Type.String({ description: "Model for the child worker: 'provider/model-id' or a bare model id. Defaults to the main session's active model." })),
+  provider: Type.Optional(Type.String({ description: "Provider for the child worker when the model id alone is ambiguous." })),
   cwd: Type.Optional(Type.String()),
 });
 
@@ -37,7 +39,7 @@ const RunIdSchema = Type.Object({ runId: Type.String() });
 type RunParameters = Static<typeof RunSchema>;
 
 /** Stores the durable artifacts and ownership of one worker. */
-type Run = { id: string; tmux: string; dir: string; sessionId: string; started: number; tools: string[]; status: string; notifyOnCompletion?: boolean };
+type Run = { id: string; tmux: string; dir: string; sessionId: string; started: number; tools: string[]; status: string; notifyOnCompletion?: boolean; model?: string };
 
 /** Narrows a persisted custom session entry to a subagent run record. */
 function isRun(value: unknown): value is Run {
@@ -71,7 +73,7 @@ async function isRunning(pi: ExtensionAPI, run: Run): Promise<boolean> {
 }
 
 /** Starts a child Pi process in tmux and returns its tracked execution record. */
-async function startRun(pi: ExtensionAPI, parameters: RunParameters, sessionId: string, cwd: string): Promise<Run> {
+async function startRun(pi: ExtensionAPI, parameters: RunParameters, sessionId: string, cwd: string, modelSelection: { provider: string; modelId: string }): Promise<Run> {
   const id = `subagent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const dir = await mkdtemp(join(tmpdir(), "pi-subagent-"));
   const tools = parameters.tools ?? ["read"];
@@ -82,9 +84,9 @@ async function startRun(pi: ExtensionAPI, parameters: RunParameters, sessionId: 
   const promptPath = join(dir, "prompt.md");
   const scriptPath = join(dir, "run.sh");
   await writeFile(promptPath, prompt, { mode: 0o600 });
-  const command = ["pi", "--mode", "json", "--print", "--no-session", "--tools", tools.join(","), `@${promptPath}`].map(shellQuote).join(" ");
+  const command = ["pi", "--mode", "json", "--print", "--no-session", "--tools", tools.join(","), "--provider", modelSelection.provider, "--model", modelSelection.modelId, `@${promptPath}`].map(shellQuote).join(" ");
   await writeFile(scriptPath, `#!/bin/sh\n${command} >${shellQuote(join(dir, "events.jsonl"))} 2>${shellQuote(join(dir, "stderr.log"))}\nprintf '%s' $? >${shellQuote(join(dir, "exit-code"))}\n`, { mode: 0o700 });
-  const run = { id, tmux: id, dir, sessionId, started: Date.now(), tools, status: "running", notifyOnCompletion: parameters.mode === "background" };
+  const run = { id, tmux: id, dir, sessionId, started: Date.now(), tools, status: "running", notifyOnCompletion: parameters.mode === "background", model: `${modelSelection.provider}/${modelSelection.modelId}` };
   const created = await pi.exec("tmux", ["new-session", "-d", "-s", run.tmux, "-c", parameters.cwd ?? cwd, "/bin/sh", scriptPath], { timeout: 5_000 });
   if (created.code !== 0) throw new Error(`Failed to start tmux worker: ${created.stderr.trim()}`);
   return run;
@@ -119,7 +121,7 @@ export default function subagents(pi: ExtensionAPI): void {
       pi.appendEntry("subagent_completion", { runId: run.id });
     }
   };
-  pi.registerTool({ name: "subagent_run", label: "Run Subagent", description: "Run one bounded Pi subagent in tmux. Blocking is the default and returns only its final report.", promptSnippet: "Delegate a bounded task to an isolated Pi subagent.", promptGuidelines: ["Use subagent_run only for a concrete bounded task; default to read-only tools and do not delegate commits, deployments, or credential access."], parameters: RunSchema,
+  pi.registerTool({ name: "subagent_run", label: "Run Subagent", description: "Run one bounded Pi subagent in tmux. Blocking is the default and returns only its final report. Optionally select the child model via model ('provider/model-id' or bare id) and provider; defaults to the main session's active model.", promptSnippet: "Delegate a bounded task to an isolated Pi subagent.", promptGuidelines: ["Use subagent_run only for a concrete bounded task; default to read-only tools and do not delegate commits, deployments, or credential access.", "Pick the child model to fit the task: use a cheap model for straightforward exploration or search, and the default (main session) model only when the task needs it."], parameters: RunSchema,
     renderCall(parameters, theme) {
       return new Text(theme.fg("toolTitle", theme.bold(formatSubagentRunCall(parameters))), 0, 0);
     },
@@ -127,7 +129,10 @@ export default function subagents(pi: ExtensionAPI): void {
       return createToolResultPreview(getToolResultText(result.content), options.expanded, "head", theme);
     },
     async execute(_id, parameters, signal, _update, ctx) {
-      const run = await startRun(pi, parameters, ctx.sessionManager.getSessionId(), ctx.cwd); runs.set(run.id, run); pi.appendEntry("subagent_run", run); updateStatus(ctx);
+      const modelSelection = resolveModelSelection(parameters, ctx.model);
+      const registered = ctx.modelRegistry.find(modelSelection.provider, modelSelection.modelId);
+      if (!registered) throw new Error(`Unknown model ${modelSelection.provider}/${modelSelection.modelId}. Use a 'provider/model-id' pair from the available catalogue.`);
+      const run = await startRun(pi, parameters, ctx.sessionManager.getSessionId(), ctx.cwd, modelSelection); runs.set(run.id, run); pi.appendEntry("subagent_run", run); updateStatus(ctx);
       if (shouldWatchCompletion(parameters.mode ?? "blocking", false)) {
         void watchRun(run, ctx);
         return { content: [{ type: "text", text: `Started background subagent ${run.id}. Inspect with subagent_status; tmux attach -t ${run.tmux}` }], details: run };
