@@ -67,9 +67,6 @@ export default function backgroundTerminal(pi: ExtensionAPI): void {
     renderCall(parameters, theme) { return new Text(theme.fg("toolTitle", theme.bold(formatBackgroundStartCall(parameters))), 0, 0); },
     async execute(_id, parameters, _signal, _update, ctx) {
       if (parameters.command.includes("\0")) throw new Error("Command must not contain a NUL byte.");
-      if (!ctx.hasUI) throw new Error("Background commands require an interactive confirmation.");
-      const approved = await ctx.ui.confirm("Start background command?", `This command will run detached in tmux:\n\n${parameters.command}`);
-      if (!approved) throw new Error("Background command was not confirmed.");
       const id = `bg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const dir = await mkdtemp(join(tmpdir(), "pi-bg-terminal-"));
       const job: Job = { id, tmux: id, dir, sessionId: ctx.sessionManager.getSessionId(), title: parameters.title ?? id, command: parameters.command, started: Date.now(), status: "running" };
