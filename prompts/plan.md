@@ -20,6 +20,8 @@ Create a focused implementation plan for the current session. Load and follow th
 - Split tasks that affect more than three unrelated areas or require more than four distinct implementation steps.
 - Order tasks by dependency, with foundational work first.
 - For each planned task, identify the intended behavior, likely affected modules or files, established patterns to follow, and the relevant test or verification command.
+- Make every task executable by a fresh session with no planning context: name full repo-relative paths, embed the context a new session needs, and define non-obvious terms. Specify contracts, not implementation bodies.
+- For significant unknowns, plan an explicit de-risking or prototyping task first, with criteria for promoting or discarding its result.
 - Do not mark selected td tasks `in_progress` until the plan passes its review.
 </planning>
 
@@ -34,9 +36,13 @@ Write `.agents/PLAN.md` using this structure:
 
 ## Tasks
 - [ ] <implementation-level task> (td:<task-id>)
-  - Behavior: <expected outcome>
+  - Behavior: <expected observable outcome; reference PRD requirement ids when they exist>
   - Scope: <likely modules or files>
-  - Verification: <test, lint, type check, or build command>
+  - Interfaces: <new or changed signatures, types, or data shapes; omit for config or doc-only changes>
+  - Verification: <command and expected observable outcome>
+
+## Decision Log
+- <decision> — <rationale> (<date>)
 
 ## Notes
 <constraints, decisions, risks, and carry-over context>
