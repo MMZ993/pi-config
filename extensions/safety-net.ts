@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { readEnabled, resolveTarget, writeEnabled } from "../src/safety-net/state.ts";
 
 type Rule = {
   name: string;
@@ -54,8 +55,37 @@ function matchingRule(command: string, rules: Rule[]): Rule | undefined {
 }
 
 export default function (pi: ExtensionAPI) {
+  let enabled = true;
+
+  const updateStatus = (ctx: { ui: { setStatus(key: string, value: string | undefined): void } }): void => {
+    ctx.ui.setStatus("safety-net", enabled ? undefined : "safety net off");
+  };
+
+  pi.on("session_start", async (_event, ctx) => {
+    enabled = await readEnabled();
+    updateStatus(ctx);
+  });
+
+  pi.registerCommand("safety", {
+    description: "Toggle the bash safety net (on/off), persistently across sessions",
+    getArgumentCompletions: (prefix: string) => {
+      const options = ["on", "off"];
+      return options
+        .filter((option) => option.startsWith(prefix.toLowerCase()))
+        .map((option) => ({ value: option, label: option }));
+    },
+    handler: async (args, ctx) => {
+      const target = resolveTarget(args);
+      enabled = target ?? !enabled;
+      await writeEnabled(enabled);
+      updateStatus(ctx);
+      ctx.ui.notify(enabled ? "Safety net enabled." : "Safety net disabled for this machine (persisted).", enabled ? "info" : "warning");
+    },
+  });
+
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName !== "bash") return;
+    if (!enabled) return;
 
     const command = event.input.command;
     if (typeof command !== "string") {
