@@ -49,8 +49,11 @@ Record only observed conventions and clearly mark uncertainty. Write `.agents/RU
 ## Libraries
 <existing library choices and their established uses>
 
+## Documentation
+<observed documentation language, doc-comment style, and README or wiki conventions>
+
 ## Testing
-<observed test framework, placement, fixtures, and verification commands>
+<observed test framework, placement, and fixtures, plus lint, type-check, format, and build commands>
 
 ## Do Not
 <observed anti-patterns, prohibited alternatives, and repository constraints>

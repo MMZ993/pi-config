@@ -38,8 +38,11 @@ Every rule must trace to the approved PRD or observed project convention. Write 
 ## Libraries
 <approved library choices and prohibited alternatives where relevant>
 
+## Documentation
+<documentation language, doc-comment style, and README or wiki conventions>
+
 ## Testing
-<test framework, placement, and required verification>
+<test framework and placement, plus lint, type-check, format, and build commands>
 
 ## Do Not
 <rejected approaches, anti-patterns, and constraints>

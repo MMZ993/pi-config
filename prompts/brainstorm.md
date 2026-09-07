@@ -13,8 +13,8 @@ Use this workflow only for an application or feature the user owns and intends t
 
 <dialogue>
 1. Ask one focused question at a time.
-2. Establish the problem, intended users, success criteria, constraints, and explicit non-goals.
-3. When the scope is large, split it into independent deliverable pieces and focus on the first one.
+2. Establish the problem, intended users, success criteria, constraints, and explicit non-goals; record them in the PRD as they are settled.
+3. When the scope is large, split it into independent deliverable pieces, record the sequence in the PRD, and focus on the first one.
 4. Once requirements are understood, present two or three viable approaches with trade-offs and a recommendation. Obtain the user's agreement before recording an approach as decided.
 </dialogue>
 
@@ -27,11 +27,14 @@ Create or update `.agents/PRD.md` as decisions are made. This file is the resuma
 ## Problem
 <what is being solved and for whom>
 
+## Success Criteria
+<observable outcomes and constraints>
+
 ## Requirements
-<numbered, concrete requirements>
+<numbered requirements, each stated so completion is observable>
 
 ## Approach
-<agreed approach and key decisions>
+<agreed approach, key decisions, and deliverable sequence for large scopes>
 
 ## Out of Scope
 <explicit exclusions>
