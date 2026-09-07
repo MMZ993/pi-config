@@ -49,8 +49,11 @@ export default function backgroundTerminal(pi: ExtensionAPI): void {
     pi.appendEntry("bg_terminal_completion", { jobId: job.id });
   };
   const watch = async (job: Job, ctx: ExtensionContext, generation = sessionGeneration): Promise<void> => {
-    while (generation === sessionGeneration && await refresh(job)) await new Promise((resolve) => setTimeout(resolve, 1_000));
-    if (generation !== sessionGeneration) return;
+    while (generation === sessionGeneration && !sessionClosing) {
+      try { if (!await refresh(job)) break; } catch { return; }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+    if (generation !== sessionGeneration || sessionClosing) return;
     updateFooter(ctx);
     if (!sessionClosing && shouldDeliverCompletion(job.status, job.cancellationPending === true) && completionNeedsDelivery(job.sessionId, ctx.sessionManager.getSessionId(), deliveredJobs.has(job.id))) await notifyCompletion(job, ctx);
   };
@@ -125,5 +128,8 @@ export default function backgroundTerminal(pi: ExtensionAPI): void {
     }
     updateFooter(ctx);
   });
-  pi.on("session_shutdown", async (_event, ctx) => { sessionClosing = true; const running = [...jobs.values()].filter((job) => job.status === "running").length; if (running) ctx.ui.notify(`${running} background job${running === 1 ? " remains" : "s remain"} running in tmux.`, "warning"); });
+  pi.on("session_shutdown", async (_event, ctx) => {
+    sessionClosing = true;
+    sessionGeneration += 1;
+    const running = [...jobs.values()].filter((job) => job.status === "running").length; if (running) ctx.ui.notify(`${running} background job${running === 1 ? " remains" : "s remain"} running in tmux.`, "warning"); });
 }

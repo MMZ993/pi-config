@@ -94,6 +94,7 @@ async function startRun(pi: ExtensionAPI, parameters: RunParameters, sessionId: 
 export default function subagents(pi: ExtensionAPI): void {
   const runs = new Map<string, Run>();
   let sessionClosing = false;
+  let sessionGeneration = 0;
   const refreshStatus = async (run: Run): Promise<boolean> => {
     const running = await isRunning(pi, run);
     if (running) { run.status = "running"; return true; }
@@ -105,8 +106,12 @@ export default function subagents(pi: ExtensionAPI): void {
     const running = countRunningRuns([...runs.values()].map((run) => run.status));
     ctx.ui.setStatus("subagents", running > 0 ? `${running} subagent${running === 1 ? "" : "s"} running` : undefined);
   };
-  const watchRun = async (run: Run, ctx: ExtensionContext): Promise<void> => {
-    while (await refreshStatus(run)) await new Promise((resolve) => setTimeout(resolve, 1_000));
+  const watchRun = async (run: Run, ctx: ExtensionContext, generation = sessionGeneration): Promise<void> => {
+    while (generation === sessionGeneration && !sessionClosing) {
+      try { if (!await refreshStatus(run)) break; } catch { return; }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+    if (generation !== sessionGeneration || sessionClosing) return;
     updateStatus(ctx);
     if (!sessionClosing && shouldInjectCompletion(run.sessionId, ctx.sessionManager.getSessionId())) {
       const outcome = run.status === "completed" ? "completed" : "failed";
@@ -153,6 +158,7 @@ export default function subagents(pi: ExtensionAPI): void {
     async execute(_id, parameters, _signal, _update, ctx) { const run = runs.get(parameters.runId); if (!run) throw new Error("Unknown subagent run."); await pi.exec("tmux", ["kill-session", "-t", run.tmux], { timeout: 5_000 }); run.status = "cancelled"; ctx.ui.setStatus("subagents", undefined); return { content: [{ type: "text", text: `Cancelled ${run.id}` }], details: run }; } });
   pi.on("session_start", async (_event, ctx) => {
     sessionClosing = false;
+    sessionGeneration += 1;
     const entries = ctx.sessionManager.getEntries() as Array<{ type?: string; customType?: string; data?: unknown }>;
     const delivered = new Set(entries.filter((entry) => entry.type === "custom" && entry.customType === "subagent_completion").map((entry) => (entry.data as { runId?: string } | undefined)?.runId).filter((runId): runId is string => typeof runId === "string"));
     for (const entry of entries) {
@@ -166,5 +172,8 @@ export default function subagents(pi: ExtensionAPI): void {
       pi.appendEntry("subagent_completion", { runId: run.id });
     }
   });
-  pi.on("session_shutdown", async (_event, ctx) => { sessionClosing = true; const active = [...runs.values()].filter((run) => run.status === "running"); if (active.length > 0) ctx.ui.notify(`${active.length} subagent worker remains running in tmux.`, "warning"); });
+  pi.on("session_shutdown", async (_event, ctx) => {
+    sessionClosing = true;
+    sessionGeneration += 1;
+    const active = [...runs.values()].filter((run) => run.status === "running"); if (active.length > 0) ctx.ui.notify(`${active.length} subagent worker remains running in tmux.`, "warning"); });
 }
