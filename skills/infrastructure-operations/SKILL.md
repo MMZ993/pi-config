@@ -32,6 +32,12 @@ Stop and require explicit confirmation after clearly describing consequences. Ex
 - Keep playbooks, modules, and manifests idempotent.
 - Use vault references or environment injection for secrets; never put secrets in files, command arguments, or logs.
 - Apply least privilege, pin versions, and use explicit names and configuration.
+- Be cost-aware in paid environments: prefer minimal-scale settings and flag anything that starts billing to the owner before creation; document teardown steps next to setup steps.
+
+## Documentation of manual work
+
+- Document all manual environment work performed (commands, decisions, gotchas, evidence — including failures) in the project's designated place: a runbook, procedure, or ops document, as the project defines it.
+- When unsure where manual work should be documented, ask the user. Do not record operational runbook entries in `AGENTS.md` or other agent-rules files.
 
 ## Working method
 

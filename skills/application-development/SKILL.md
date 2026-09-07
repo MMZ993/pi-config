@@ -23,6 +23,7 @@ description: Apply established application-development conventions when planning
 - Keep each file small and focused. Split files that have grown beyond one cohesive responsibility into appropriately named modules.
 - Give each function, method, and class one purpose. Extract independently changing or separately testable behavior instead of accumulating branches and modes.
 - Keep static data, configuration, schemas, and lookup tables separate from executable logic.
+- Make code read like a book: extract logically grouped operations into small, intention-revealing helpers so the calling code describes *what* happens (for example `retryable = isRetryable(error)`), with the helpers explaining *how*. Not one helper per line — but whenever a block of two or more lines forms one logical step, name it. Reader-first: a maintainer should follow the intent without mentally simulating the implementation.
 - Prefer code that is easy to trace locally: make control flow, data transformations, state changes, and side effects explicit.
 - Place I/O, framework calls, and other side effects at the boundaries; keep core decision logic deterministic where practical.
 - Choose the least complex adequate design. Duplication is acceptable when abstraction would obscure behavior; avoid inheritance, recursion, and patterns that add indirection unless they provide a clear, present benefit.
