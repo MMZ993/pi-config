@@ -20,11 +20,19 @@ Machine-wide settings and the shared system prompt are managed separately by dot
 
 ## Workflows
 
-- Use `/build <task>` for one small, well-understood change. It applies proportionate tests and verification without planning, review, handoff, or commit by default.
-- Use `/plan <scope>` for multi-step work. It creates `.agents/PLAN.md` and synchronizes `td` tasks after confirmation.
-- Use `/dev` to execute an approved plan with test-first implementation, verification, independent read-only review, optional explicit commit, and handoff.
-- Use `/devops <task>` for infrastructure work. State-changing and destructive operations require explicit confirmation.
-- Use the `request-review` skill for an independent read-only review; `/dev` invokes it automatically after all tasks complete.
+**On-ramps** — create the project's baseline documents once:
+
+- Owned application: `/brainstorm <idea>` defines requirements in `.agents/PRD.md`, then `/prepare-rules` derives `.agents/RULES.md` from the approved PRD.
+- Existing or forked repository: `/survey-codebase` derives `.agents/RULES.md` from observed conventions; no PRD is created.
+
+**Development** — iterate:
+
+- `/plan <scope>` — multi-step work. Creates `.agents/PLAN.md` and synchronizes `td` tasks after confirmation.
+- `/dev` — execute an approved plan with test-first implementation, verification, independent read-only review via the `request-review` skill, optional explicit commit, and session handoff. Requires `/plan` first.
+- `/build <task>` — one small, well-understood change; tests and verification without planning, review, handoff, or commit by default.
+- `/devops <task>` — infrastructure work with tiered confirmation for state-changing and destructive operations.
+
+**Resuming:** every workflow re-reads `.agents/PRD.md`, `.agents/RULES.md`, `.agents/PLAN.md`, and `.agents/HANDOFF.md` when present. Resume multi-step work with `/plan` (it reconciles the existing plan and `td` backlog), then run `/dev` — in the same session if context allows, otherwise in a fresh session. Completed `/dev` sessions record carry-over in `.agents/HANDOFF.md` via the `session-wrapup` skill.
 
 ## Installation
 
