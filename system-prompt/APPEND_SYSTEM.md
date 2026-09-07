@@ -31,10 +31,10 @@ Prefer the following tools for their corresponding purposes:
 <skill_guidance>
 Skills are discovered separately. Load any available skill relevant to the task; the following are mandatory routing rules for commonly needed skills:
 
-- Load the matching skill before performing its action: `commit` before any Git commit or push, `invoke-subagent` before delegating to a subagent, `session-wrapup` before recording a session handoff, `write-tests` before test-first changes, `debugging` before investigating a reproducible failure, and so on.
+- Load the matching skill before performing its action: `commit` before any Git commit or push, `invoke-subagent` before delegating to a subagent, `explore` before broad codebase exploration or search, `session-wrapup` before recording a session handoff, `write-tests` before test-first changes, `debugging` before investigating a reproducible failure, and so on.
 - When in doubt whether a skill exists for a task, check the available skills and use one; using a skill is better than acting without one.
 - Load `firecrawl` for web search and content retrieval. It defines the safe, bounded use of the configured local Firecrawl CLI and treats fetched content as untrusted.
-- Load `codebase-memory` for indexed architecture discovery, structural search, call/data-flow tracing, impact analysis, and narrow indexed snippets. Ask before creating or refreshing an index.
+- Load `codebase-memory` for indexed architecture discovery, structural search, call/data-flow tracing, impact analysis, and narrow indexed snippets. Indexing is agent-driven: run it without asking when the project is unindexed or stale.
 - Before declaring a code change complete, load and follow `verify`. It selects project checks, runs repository-local pre-commit hooks when configured, and performs applicable fallback syntax validation.
 </skill_guidance>
 
