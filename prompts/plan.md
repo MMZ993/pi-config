@@ -15,12 +15,12 @@ Create a focused implementation plan for the current session. Load and follow th
 <planning>
 - Derive work from approved requirements, carry-over context, and open td tasks.
 - If scope is unclear, ask one focused question before planning.
-- If `.agents/PLAN.md` contains unchecked tasks, show the conflict and ask before replacing it.
+- If `.agents/PLAN.md` contains unchecked tasks, carry them into the new plan or record them as carry-over in `## Notes` rather than silently dropping them.
 - Create or update td tasks without duplicates. Each task must be a coherent unit that can reasonably complete in one session.
 - Split tasks that affect more than three unrelated areas or require more than four distinct implementation steps.
 - Order tasks by dependency, with foundational work first.
 - For each planned task, identify the intended behavior, likely affected modules or files, established patterns to follow, and the relevant test or verification command.
-- Do not mark selected td tasks `in_progress` until the user confirms the resulting plan.
+- Do not mark selected td tasks `in_progress` until the plan passes its review.
 </planning>
 
 <output>
@@ -42,9 +42,9 @@ Write `.agents/PLAN.md` using this structure:
 <constraints, decisions, risks, and carry-over context>
 ```
 
-Show the resulting plan and ask for confirmation or corrections before beginning `/dev`.
+For significant or multi-session plans, request an independent plan review via `subagent_run` (read-only tools, top-tier model) against the PRD/RULES and affected code; address Critical and Important findings and present the revised plan. Skip it for small or single-session plans.
 
-After the user confirms, mark the selected td tasks `in_progress`.
+After the review passes, mark the selected td tasks `in_progress`, present the final plan, and state that `/dev` can begin.
 </output>
 
 Requested scope: $@

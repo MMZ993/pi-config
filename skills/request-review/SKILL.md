@@ -32,7 +32,7 @@ git log --oneline -10 >"$review_dir/recent-commits.txt"
 
 ## Run the Reviewer
 
-Call `subagent_run` with `tools: ["read", "fd", "rg"]`. Its `task` must include the review policy below, the requested focus, relevant requirements, and the absolute snapshot directory path. Instruct the worker to read `status.txt`, `unstaged.diff`, `staged.diff`, `untracked.txt`, and `recent-commits.txt` from that directory before reviewing workspace files.
+Call `subagent_run` with `tools: ["read", "fd", "rg"]`. Pick the child model deliberately: review is high-judgment work — use a top-tier approved model per the `invoke-subagent` skill (for example `gpt-5.6-sol`, or the main session's model), never a small/cheap exploratory model. Its `task` must include the review policy below, the requested focus, relevant requirements, and the absolute snapshot directory path. Instruct the worker to read `status.txt`, `unstaged.diff`, `staged.diff`, `untracked.txt`, and `recent-commits.txt` from that directory before reviewing workspace files.
 
 Use this policy in the task:
 
