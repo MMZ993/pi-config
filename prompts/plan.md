@@ -48,7 +48,7 @@ Write `.agents/PLAN.md` using this structure:
 <constraints, decisions, risks, and carry-over context>
 ```
 
-For significant or multi-session plans, request an independent plan review via `subagent_run` (read-only tools, top-tier model) against the PRD/RULES and affected code; address Critical and Important findings and present the revised plan. Skip it for small or single-session plans.
+For significant or multi-session plans, request an independent plan review via `subagent_run` (read-only tools plus `bash` for `td` inspection, top-tier model) against the PRD/RULES, affected code, and the `td` backlog (the reviewer may run `td task list` and `td task show` read-only); address Critical and Important findings and present the revised plan. Skip it for small or single-session plans.
 
 After the review passes, mark the selected td tasks `in_progress`, present the final plan, and state that `/dev` can begin.
 </output>
