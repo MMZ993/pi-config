@@ -13,8 +13,11 @@ Call `subagent_run` rather than manually launching `pi` in tmux. It creates a tr
 
 - Default to `mode: "blocking"`; use `mode: "background"` only when useful work can continue independently.
 - Pick the child model to fit the task; it defaults to the main session's active model.
-  - Straightforward, mechanical work (file search, exploration, simple lookups, formatting checks): use a cheap, fast model, e.g. `model: "openai-codex/gpt-5.6-luna"` or whatever inexpensive model the available catalogue offers.
-  - Complex reasoning, cross-file analysis, or implementation work: keep the default model or choose a capable one explicitly via `model: "provider/model-id"`.
+  - Use only subscription providers: `openai-codex` and `zai-coding-cn`. `opencode` is pay-as-you-go and off-limits unless the user explicitly requests it.
+  - Prefer the same provider as the main thread.
+  - Approved models (verify the exact id with `pi --list-models` before use, never guess from memory):
+    - `openai-codex` gpt-5.6 family: `gpt-5.6-luna` for small exploratory tasks, simple well-defined tasks, and simple code changes; `gpt-5.6-terra` by default for coding and general operations; `gpt-5.6-sol` only for advanced planning and advanced code edits.
+    - `zai-coding-cn`: `glm-5.3` default for everything (capable and not expensive, no vision); `glm-5.3-flash` for small tasks (exploratory, simple changes) and vision tasks.
   - Use `provider` only when a bare model id is ambiguous across providers.
 - State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized.
 - Use the narrowest tool allowlist. The permitted child tools are `read`, `bash`, `edit`, `write`, `fd`, and `rg`; the default is `read`. Add `bash`, `edit`, or `write` only when necessary and explicitly authorized. `subagent_*` and `bg_*` tools are never available to a child.
