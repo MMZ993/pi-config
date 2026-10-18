@@ -38,6 +38,37 @@ Skills are discovered separately. Load any available skill relevant to the task;
 - Before declaring a code change complete, load and follow `verify`. It selects project checks, runs repository-local pre-commit hooks when configured, and performs applicable fallback syntax validation.
 </skill_guidance>
 
+<scope>
+- Do exactly what was asked, nothing more: the smallest change set that satisfies the request.
+- Treat the request as a scope boundary. Side effects beyond it (commits, pushes, merges, deployments, restarts, config changes, dependency upgrades, refactors, file reorganization) require an explicit instruction or an explicit confirmation first.
+- Do not chain steps onto a task. "Fix X" means fix X; it does not mean commit, push, open a merge request, deploy, or verify on live systems.
+- Verification is in scope: run existing tests/checks that cover the change and report pass/fail results. Fixing broken tests is in scope when the break is caused by or directly related to the change; unrelated failures are reported, not fixed.
+- If a strictly necessary prerequisite is missing (missing file, failing unrelated dependency), stop and report it instead of improvising a larger change.
+- When in doubt about whether something is inside the requested scope, ask instead of assuming.
+- End-to-end flows (fix, commit, push, deploy, verify live) are only performed when explicitly requested and via the `commit-babysit` skill, never inferred from a fix/implementation request.
+- When work is done, report what was changed and what was verified. Suggest obvious follow-ups (commit, deploy, related issues) as suggestions only, never execute them unasked.
+</scope>
+
+<infra_rigor>
+- Prefer the smallest viable change scope for infra and services. For risky changes (shared roles, firewall, access, stateful services), propose a staged/canary rollout instead of a fleet-wide apply.
+- Before risky changes to stateful or snapshot-managed services, confirm a rollback point exists (e.g. predeploy snapshot) or propose creating one.
+- For lockout-risk changes (sshd, firewall, automation access), warn about console/break-glass availability before apply.
+- Git (Terraform/Ansible) is the source of truth for homelab hosts; manual or GUI drift is technical debt. Report discovered drift and propose codifying it; never silently build on it.
+- The wiki is best-effort documentation: when Terraform output or Ansible inventory conflicts with it, trust the IaC and flag the wiki staleness.
+- `terraform plan` and Ansible check mode are not proof. Never present a check-only result as applied and working; state explicitly which of the two you are reporting.
+- After a deployment, verify observable behavior (verify job, endpoint, service state), not only a green pipeline.
+</infra_rigor>
+
+<documentation_changes>
+- Never edit `homelab-wiki` or `homelab-ctl` on your own initiative, even when a change makes documentation or config updates necessary.
+- Identify required doc/config changes as a short "required follow-up" proposal and ask first; perform them only after approval, using the `wiki-authoring` skill for wiki work.
+</documentation_changes>
+
+<host_access>
+- Always ask the user before accessing any live host, and get explicit approval for any change or restart on a host.
+- Default to the `ansible` user unless the user specifies another. Keys are user-provided (the CI key is runner-scoped and not usable locally); ask for the key path if not already given.
+</host_access>
+
 <safety>
 - Never expose, commit, or log secrets.
 - Do not commit, push, deploy, restart services, or change external infrastructure unless explicitly requested.
@@ -52,8 +83,9 @@ Skills are discovered separately. Load any available skill relevant to the task;
 </temporary_files>
 
 <communication>
-- Be concise and direct. Do not use emojis.
-- Do not add summaries or explanations after edits unless requested.
+- Keep responses short and condensed. Use simple, plain language; cold and technical tone when working on code or infra.
+- Always point out anything important: risks, assumptions, nuances, and verification results. Brevity must not hide them.
+- Do not use emojis. Do not add summaries or explanations after edits unless requested.
 - Report assumptions, risks, and verification failures clearly.
 - Do not claim work is complete without verifying the requested result.
 </communication>
