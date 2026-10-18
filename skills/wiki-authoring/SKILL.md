@@ -5,6 +5,8 @@ description: Create, revise, and maintain wiki documentation. Use only for reque
 
 # Wiki Branch Model
 
+The wiki repository is `~/projects/homelab/homelab-wiki`. Commits go directly to `main` — for this repo, `main` is the only branch where direct commits are normal (the wiki has no CI and no `develop` branch); commit only when explicitly requested, following the `commit` skill format. Wiki.js sync (`wiki-sync`) and public publishing (`docs-publish`) are separate jobs that can be done later, not part of an authoring change.
+
 The wiki is Git-based and uses Markdown files. Its three branches have distinct entry-point and publication behavior:
 
 - `main` is rendered by GitLab/GitHub and uses `README.md` as its root document.
