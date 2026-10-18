@@ -1,6 +1,6 @@
 ---
 name: commit-babysit
-description: End-to-end flow for a fix or change: review, commit, push, CI deployment, and verification, running only explicitly approved operations. Use only when the user explicitly requests a commit babysit.
+description: "End-to-end flow for a fix or change — review, commit, push, CI deployment, and verification — running only explicitly approved operations. Use only when the user explicitly requests a commit babysit."
 ---
 
 # Commit Babysit
