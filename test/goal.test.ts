@@ -7,6 +7,7 @@ test("goal commands persist, show, and disable a session goal; settlement reques
   const commands = new Map<string, { handler: (...args: any[]) => Promise<void> }>();
   const entries: any[] = [];
   const notifications: string[] = [];
+  const statuses = new Map<string, string | undefined>();
   goalExtension({
     on: (event: string, handler: (...args: any[]) => Promise<any>) => events.set(event, handler),
     registerCommand: (name: string, options: { handler: (...args: any[]) => Promise<void> }) => commands.set(name, options),
@@ -15,11 +16,15 @@ test("goal commands persist, show, and disable a session goal; settlement reques
 
   const context = {
     sessionManager: { getBranch: () => entries.map((entry, index) => ({ id: String(index), type: "custom", customType: entry.customType, data: entry.data })) },
-    ui: { notify: (message: string) => notifications.push(message), setStatus: () => {} },
+    ui: {
+      notify: (message: string) => notifications.push(message),
+      setStatus: (key: string, value: string | undefined) => statuses.set(key, value),
+    },
   };
 
   await commands.get("goal")!.handler("Finish the implementation", context as any);
   assert.equal(entries.at(-1).data.goal, "Finish the implementation");
+  assert.equal(statuses.get("goal"), "goal: Finish the implementation");
   assert.equal((await events.get("agent_before_settle")!({ entries: [], context: { llmMessages: [], contextEntries: [] } }, context)).continue, true);
 
   await commands.get("showgoal")!.handler("", context as any);
@@ -27,6 +32,7 @@ test("goal commands persist, show, and disable a session goal; settlement reques
 
   await commands.get("ungoal")!.handler("", context as any);
   assert.equal(entries.at(-1).data.goal, null);
+  assert.equal(statuses.get("goal"), undefined);
   assert.equal(await events.get("agent_before_settle")!({ entries: [], context: { llmMessages: [], contextEntries: [] } }, context), undefined);
 });
 

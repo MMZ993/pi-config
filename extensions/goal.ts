@@ -32,7 +32,7 @@ export default function goalExtension(pi: ExtensionAPI): void {
   let goal: string | null = null;
 
   const updateStatus = (ctx: { ui: { setStatus(key: string, value: string | undefined): void } }): void => {
-    ctx.ui.setStatus("goal", goal ? "goal active" : undefined);
+    ctx.ui.setStatus("goal", goal ? `goal: ${goal}` : undefined);
   };
 
   const saveGoal = (nextGoal: string | null): void => {
