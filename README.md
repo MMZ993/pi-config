@@ -5,6 +5,7 @@ Reusable, versioned configuration for the Pi coding agent.
 ## Contents
 
 - `extensions/safety-net.ts` — blocks catastrophic shell commands and asks for confirmation before destructive operations.
+- `extensions/goal.ts` — `/goal` persists a session goal and continues work until Pi answers exactly `WORK DONE`; `/ungoal` disables it and `/showgoal` displays it without prompting Pi.
 - `extensions/ask-user.ts` — exposes the `ask_user` tool for one necessary multiple-choice clarification, including a custom-answer option.
 - `extensions/tokyonight-header.ts` — replaces Pi's startup logo with a Tokyo Night Pi logo while retaining Pi's built-in resource summary; `/default-header` restores Pi's built-in header.
 - `extensions/system-guidance.ts` and `system-prompt/APPEND_SYSTEM.md` — append package-owned global operating guidance without replacing Pi or project instructions.
