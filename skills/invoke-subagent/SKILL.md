@@ -16,7 +16,7 @@ Call `subagent_run` rather than manually launching `pi` in tmux. It creates a tr
   - Use only subscription providers: `openai-codex` and `zai-coding-cn`. `opencode` is pay-as-you-go and off-limits unless the user explicitly requests it.
   - Prefer the same provider as the main thread.
   - Approved models (verify the exact id with `pi --list-models` before use, never guess from memory):
-    - `openai-codex` gpt-5.6 family: `gpt-5.6-luna` for small exploratory tasks, simple well-defined tasks, and simple code changes; `gpt-5.6-terra` by default for coding and general operations; `gpt-5.6-sol` only for advanced planning and advanced code edits.
+    - `openai-codex`: `gpt-6-luna` for small and default tasks (choose low or high effort to fit the task); `gpt-6.1-sol` for advanced planning and advanced code edits.
     - `zai-coding-cn`: `glm-5.3` default for everything (capable and not expensive, no vision); `glm-5.3-flash` for small tasks (exploratory, simple changes) and vision tasks.
   - Use `provider` only when a bare model id is ambiguous across providers.
 - State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized.
@@ -41,7 +41,7 @@ Keep small lookups, direct file reads, and work where the investigation path mat
 ### Explore a self-contained question
 
 ```text
-Use subagent_run with read-only tools and a cheap model (openai-codex/gpt-5.6-luna) to inspect the Terraform modules under terraform/pve01. Return only: the module that defines vault01, its VMID, and referenced outputs. Do not edit files.
+Use subagent_run with read-only tools and a cheap model (openai-codex/gpt-6-luna, low effort) to inspect the Terraform modules under terraform/pve01. Return only: the module that defines vault01, its VMID, and referenced outputs. Do not edit files.
 ```
 
 ### Perform an independent review
