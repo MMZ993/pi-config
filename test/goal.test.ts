@@ -53,10 +53,21 @@ test("an exact WORK DONE response to a goal check marks the goal complete", asyn
     context: { llmMessages: [
       { role: "user", content: "Progress check: The active goal is: Ship it\n\nDetermine whether it is complete." },
       { role: "assistant", content: [{ type: "text", text: "WORK DONE" }] },
-    ], contextEntries: [{ sourceEntry: { type: "custom_message", customType: "goal-check" }, messages: [{ role: "user" }] }] },
+    ], contextEntries: [
+      { sourceEntry: { type: "message", message: { role: "user" } }, messages: [{ role: "user" }] },
+      { sourceEntry: { type: "custom_message", customType: "goal-check" }, messages: [{ role: "custom", customType: "goal-check" }] },
+      { sourceEntry: { type: "custom_message", customType: "subagent_completion" }, messages: [{ role: "custom", customType: "subagent_completion" }] },
+    ] },
   }, context);
 
   assert.equal(result, undefined);
+  assert.equal(entries.at(-1).data.goal, null);
+
+  const afterCompletion = await events.get("agent_before_settle")!({
+    entries: [],
+    context: { llmMessages: [{ role: "assistant", content: "WORK DONE" }], contextEntries: [] },
+  }, context);
+  assert.equal(afterCompletion, undefined);
   assert.equal(entries.at(-1).data.goal, null);
 });
 
@@ -100,7 +111,10 @@ test("a stale goal-check prompt does not authorize completion on a later user tu
       { role: "assistant", content: "I am making progress." },
       { role: "user", content: "Can you check the latest test result?" },
       { role: "assistant", content: "WORK DONE" },
-    ], contextEntries: [{ sourceEntry: { type: "message" }, messages: [{ role: "user" }] }] },
+    ], contextEntries: [
+      { sourceEntry: { type: "custom_message", customType: "goal-check" }, messages: [{ role: "custom", customType: "goal-check" }] },
+      { sourceEntry: { type: "message", message: { role: "user" } }, messages: [{ role: "user" }] },
+    ] },
   }, context);
 
   assert.equal(result.continue, true);

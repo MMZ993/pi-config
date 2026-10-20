@@ -1,5 +1,25 @@
 /** Pure state helpers for the tmux-backed subagent extension. */
 
+/** Thinking levels accepted by the Pi CLI's `--thinking` option. */
+export const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+export type ThinkingLevel = typeof THINKING_LEVELS[number];
+
+/** Builds argument-safe CLI tokens for one child Pi process. */
+export function buildWorkerPiArgs(options: {
+  tools: string[];
+  provider: string;
+  modelId: string;
+  promptPath: string;
+  thinkingLevel?: ThinkingLevel;
+}): string[] {
+  return [
+    "--mode", "json", "--print", "--no-session", "--tools", options.tools.join(","),
+    "--provider", options.provider, "--model", options.modelId,
+    ...(options.thinkingLevel ? ["--thinking", options.thinkingLevel] : []),
+    `@${options.promptPath}`,
+  ];
+}
+
 /** Returns whether a completed worker belongs to the active Pi session. */
 export function shouldInjectCompletion(originSessionId: string, activeSessionId: string): boolean {
   return originSessionId === activeSessionId;

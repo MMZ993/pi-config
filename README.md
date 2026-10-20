@@ -5,11 +5,11 @@ Reusable, versioned configuration for the Pi coding agent.
 ## Contents
 
 - `extensions/safety-net.ts` — blocks catastrophic shell commands and asks for confirmation before destructive operations.
-- `extensions/goal.ts` — `/goal` persists a session goal and continues work until Pi answers exactly `WORK DONE`; `/ungoal` disables it and `/showgoal` displays it without prompting Pi.
+- `extensions/goal.ts` — `/goal` persists a session goal and requests progress checks until the latest check receives an exact `WORK DONE`; `/ungoal` disables it and `/showgoal` displays it without prompting Pi.
 - `extensions/ask-user.ts` — exposes the `ask_user` tool for one necessary multiple-choice clarification, including a custom-answer option; `/ask-user off|on|status` controls it for the current session only (new sessions default to on).
 - `extensions/tokyonight-header.ts` — replaces Pi's startup logo with a Tokyo Night Pi logo while retaining Pi's built-in resource summary; `/default-header` restores Pi's built-in header.
 - `extensions/system-guidance.ts` and `system-prompt/APPEND_SYSTEM.md` — append package-owned global operating guidance without replacing Pi or project instructions.
-- `extensions/subagents/` — delegates bounded tasks to isolated Pi workers in tracked tmux sessions; see `docs/SUBAGENT_EXTENSION.md`.
+- `extensions/subagents/` — delegates bounded tasks to isolated Pi workers in tracked tmux sessions, with optional model thinking-level selection; see `docs/SUBAGENT_EXTENSION.md`.
 - `extensions/bg-terminal/` — runs non-interactive shell commands in tracked detached tmux sessions; see `docs/BG_TERMINAL_EXTENSION.md`.
 - `extensions/copy-all.ts` — adds `/copy-all` to copy the active session's readable conversation transcript to the clipboard.
 - `extensions/file-search.ts` — replaces Pi's built-in `fd` and `rg` tools with system-managed binaries, hardened argument handling, and compact call/result rendering.

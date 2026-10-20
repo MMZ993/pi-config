@@ -6,7 +6,7 @@ import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import { formatIdCall, formatSubagentRunCall } from "../../src/tool-rendering/call-labels.ts";
 import { createToolResultPreview, getToolResultText } from "../../src/tool-rendering/result-preview.ts";
-import { countRunningRuns, resolveModelSelection, shouldInjectCompletion, shouldRestoreRun, shouldWatchCompletion, summarizeWorkerEvent } from "../../src/subagents/state.ts";
+import { buildWorkerPiArgs, countRunningRuns, resolveModelSelection, shouldInjectCompletion, shouldRestoreRun, shouldWatchCompletion, summarizeWorkerEvent, THINKING_LEVELS, type ThinkingLevel } from "../../src/subagents/state.ts";
 
 /** The default maximum wait for a blocking worker. */
 const DEFAULT_TIMEOUT_SECONDS = 300;
@@ -20,6 +20,13 @@ const ModeSchema = Type.Unsafe<"blocking" | "background">({ type: "string", enum
 /** Describes the requested timeout action. */
 const TimeoutActionSchema = Type.Unsafe<"terminate" | "keep_running">({ type: "string", enum: ["terminate", "keep_running"] });
 
+/** Describes native Pi thinking/reasoning effort choices. */
+const ThinkingLevelSchema = Type.Unsafe<ThinkingLevel>({
+  type: "string",
+  enum: [...THINKING_LEVELS],
+  description: "Optional child Pi thinking level: off, minimal, low, medium, high, xhigh, or max.",
+});
+
 /** Validates launch arguments for a bounded subagent worker. */
 const RunSchema = Type.Object({
   task: Type.String({ description: "One concrete delegated objective with expected output and constraints." }),
@@ -29,6 +36,7 @@ const RunSchema = Type.Object({
   tools: Type.Optional(Type.Array(Type.String({ description: "Allowed child tool: read, bash, edit, write, fd, or rg." }), { minItems: 1, maxItems: 8, description: "Optional child allowlist; defaults to read. Subagent and background-job tools are prohibited." })),
   model: Type.Optional(Type.String({ description: "Model for the child worker: 'provider/model-id' or a bare model id. Defaults to the main session's active model." })),
   provider: Type.Optional(Type.String({ description: "Provider for the child worker when the model id alone is ambiguous." })),
+  thinkingLevel: Type.Optional(ThinkingLevelSchema),
   cwd: Type.Optional(Type.String()),
 });
 
@@ -84,7 +92,13 @@ async function startRun(pi: ExtensionAPI, parameters: RunParameters, sessionId: 
   const promptPath = join(dir, "prompt.md");
   const scriptPath = join(dir, "run.sh");
   await writeFile(promptPath, prompt, { mode: 0o600 });
-  const command = ["pi", "--mode", "json", "--print", "--no-session", "--tools", tools.join(","), "--provider", modelSelection.provider, "--model", modelSelection.modelId, `@${promptPath}`].map(shellQuote).join(" ");
+  const command = ["pi", ...buildWorkerPiArgs({
+    tools,
+    provider: modelSelection.provider,
+    modelId: modelSelection.modelId,
+    promptPath,
+    thinkingLevel: parameters.thinkingLevel,
+  })].map(shellQuote).join(" ");
   await writeFile(scriptPath, `#!/bin/sh\n${command} >${shellQuote(join(dir, "events.jsonl"))} 2>${shellQuote(join(dir, "stderr.log"))}\nprintf '%s' $? >${shellQuote(join(dir, "exit-code"))}\n`, { mode: 0o700 });
   const run = { id, tmux: id, dir, sessionId, started: Date.now(), tools, status: "running", notifyOnCompletion: parameters.mode === "background", model: `${modelSelection.provider}/${modelSelection.modelId}` };
   const created = await pi.exec("tmux", ["new-session", "-d", "-s", run.tmux, "-c", parameters.cwd ?? cwd, "/bin/sh", scriptPath], { timeout: 5_000 });
@@ -121,7 +135,7 @@ export default function subagents(pi: ExtensionAPI): void {
       pi.appendEntry("subagent_completion", { runId: run.id });
     }
   };
-  pi.registerTool({ name: "subagent_run", label: "Run Subagent", description: "Run one bounded Pi subagent in tmux. Blocking is the default and returns only its final report. Optionally select the child model via model ('provider/model-id' or bare id) and provider; defaults to the main session's active model.", promptSnippet: "Delegate a bounded task to an isolated Pi subagent.", promptGuidelines: ["Use subagent_run only for a concrete bounded task; default to read-only tools and do not delegate commits, deployments, or credential access.", "Pick the child model to fit the task: use a cheap model for straightforward exploration or search, and the default (main session) model only when the task needs it."], parameters: RunSchema,
+  pi.registerTool({ name: "subagent_run", label: "Run Subagent", description: "Run one bounded Pi subagent in tmux. Blocking is the default and returns only its final report. Optionally select the child model via model ('provider/model-id' or bare id), provider, and thinkingLevel (off, minimal, low, medium, high, xhigh, max); omitted thinkingLevel uses the child's normal Pi default.", promptSnippet: "Delegate a bounded task to an isolated Pi subagent.", promptGuidelines: ["Use subagent_run only for a concrete bounded task; default to read-only tools and do not delegate commits, deployments, or credential access.", "Pick the child model to fit the task: use a cheap model for straightforward exploration or search, and the default (main session) model only when the task needs it.", "Set thinkingLevel when the delegated task needs a specific reasoning effort; it maps to the child's native `pi --thinking` option."], parameters: RunSchema,
     renderCall(parameters, theme) {
       return new Text(theme.fg("toolTitle", theme.bold(formatSubagentRunCall(parameters))), 0, 0);
     },

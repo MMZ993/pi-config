@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildWorkerPiArgs,
   countRunningRuns,
   resolveModelSelection,
   shouldInjectCompletion,
@@ -75,3 +76,26 @@ function verifiesModelSelectionDefaultsAndOverrides(): void {
 }
 
 test("model selection defaults to the active session model", verifiesModelSelectionDefaultsAndOverrides);
+
+test("worker CLI args forward an optional Pi thinking level", () => {
+  assert.deepEqual(buildWorkerPiArgs({
+    tools: ["read", "rg"],
+    provider: "openai-codex",
+    modelId: "gpt-6-luna",
+    promptPath: "/tmp/pi-subagent/prompt.md",
+    thinkingLevel: "high",
+  }), [
+    "--mode", "json", "--print", "--no-session", "--tools", "read,rg",
+    "--provider", "openai-codex", "--model", "gpt-6-luna", "--thinking", "high",
+    "@/tmp/pi-subagent/prompt.md",
+  ]);
+  assert.deepEqual(buildWorkerPiArgs({
+    tools: ["read"],
+    provider: "zai-coding-cn",
+    modelId: "glm-5.3",
+    promptPath: "/tmp/pi-subagent/prompt.md",
+  }), [
+    "--mode", "json", "--print", "--no-session", "--tools", "read",
+    "--provider", "zai-coding-cn", "--model", "glm-5.3", "@/tmp/pi-subagent/prompt.md",
+  ]);
+});

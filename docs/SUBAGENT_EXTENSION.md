@@ -4,7 +4,7 @@ This extension delegates one bounded task to an isolated Pi process running insi
 
 ## Tools
 
-- `subagent_run` starts a worker with a required task, optional working directory, narrow tool allowlist, and timeout; it blocks by default and returns only the final report.
+- `subagent_run` starts a worker with a required task, optional working directory, narrow tool allowlist, timeout, model, and `thinkingLevel`; it blocks by default and returns only the final report. `thinkingLevel` accepts Pi CLI values `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`, forwarding the selection as `pi --thinking <level>`. Provider/model support can vary. If omitted, the child Pi process uses its normal configured default.
 - `subagent_status` reports a worker's state, elapsed time, last structured activity, artifact paths, and tmux attach command.
 - `subagent_cancel` explicitly terminates a worker's tmux session.
 

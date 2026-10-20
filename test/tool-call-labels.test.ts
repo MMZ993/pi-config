@@ -15,7 +15,7 @@ import {
 test("tool call labels describe the requested operation", () => {
   assert.equal(formatFdCall({ pattern: "*.ts", path: "src", glob: true }), "fd *.ts src (glob)");
   assert.equal(formatRgCall({ pattern: "TODO", path: "extensions", fixedStrings: true }), 'rg "TODO" extensions (fixed strings)');
-  assert.equal(formatSubagentRunCall({ task: "Review the extension rendering\nwithout making changes.", mode: "background" }), "subagent_run Review the extension rendering without making changes. (background)");
+  assert.equal(formatSubagentRunCall({ task: "Review the extension rendering\nwithout making changes.", mode: "background", thinkingLevel: "high" }), "subagent_run Review the extension rendering without making changes. (background, thinking high)");
   assert.equal(formatBackgroundStartCall({ command: "npm run test", title: "tests" }), "$ npm run test (tests)");
 });
 
@@ -35,7 +35,7 @@ function verifiesToolCallRenderers(): void {
 
   assert.equal(tools.get("fd")?.renderCall?.({ pattern: "*.ts", path: "src", glob: true }, theme).render(200).join("").trimEnd(), "fd *.ts src (glob)");
   assert.equal(tools.get("rg")?.renderCall?.({ pattern: "TODO", path: "src" }, theme).render(200).join("").trimEnd(), 'rg "TODO" src');
-  assert.equal(tools.get("subagent_run")?.renderCall?.({ task: "Inspect the extension", mode: "background" }, theme).render(200).join("").trimEnd(), "subagent_run Inspect the extension (background)");
+  assert.equal(tools.get("subagent_run")?.renderCall?.({ task: "Inspect the extension", mode: "background", thinkingLevel: "high" }, theme).render(200).join("").trimEnd(), "subagent_run Inspect the extension (background, thinking high)");
   assert.equal(tools.get("bg_start")?.renderCall?.({ command: "npm run test", title: "tests" }, theme).render(200).join("").trimEnd(), "$ npm run test (tests)");
   assert.equal(tools.get("fd")?.renderResult?.({ content: [{ type: "text", text: "first" }] }, { expanded: false }, theme).render(200).join("").trimEnd(), "first");
   assert.equal(tools.get("rg")?.renderResult?.({ content: [{ type: "text", text: "first" }] }, { expanded: false }, theme).render(200).join("").trimEnd(), "first");

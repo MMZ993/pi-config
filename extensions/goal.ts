@@ -83,10 +83,11 @@ export default function goalExtension(pi: ExtensionAPI): void {
     if (!goal) return;
     const messages = event.context.llmMessages;
     const lastMessage = messages.at(-1);
-    const latestUserEntry = [...event.context.contextEntries].reverse().find((entry) =>
-      entry.messages.some((message) => message.role === "user"));
-    const isGoalCheckResponse = latestUserEntry?.sourceEntry.type === "custom_message" &&
-      latestUserEntry.sourceEntry.customType === "goal-check";
+    const latestPromptEntry = [...event.context.contextEntries].reverse().find((entry) =>
+      entry.messages.some((message) => message.role === "user") ||
+      (entry.sourceEntry.type === "custom_message" && entry.sourceEntry.customType === "goal-check"));
+    const isGoalCheckResponse = latestPromptEntry?.sourceEntry.type === "custom_message" &&
+      latestPromptEntry.sourceEntry.customType === "goal-check";
     if (lastMessage?.role === "assistant" && isGoalCheckResponse && messageText(lastMessage) === "WORK DONE") {
       saveGoal(null);
       return;

@@ -21,7 +21,7 @@ type RgCall = {
 };
 
 /** Describes the launch arguments displayed for a subagent call. */
-type SubagentRunCall = { task: string; mode?: "blocking" | "background"; timeoutSeconds?: number };
+type SubagentRunCall = { task: string; mode?: "blocking" | "background"; timeoutSeconds?: number; thinkingLevel?: string };
 
 /** Describes the launch arguments displayed for a background-command call. */
 type BackgroundStartCall = { command: string; title?: string };
@@ -61,6 +61,7 @@ export function formatSubagentRunCall(parameters: SubagentRunCall): string {
   const options = [
     parameters.mode === "background" ? "background" : undefined,
     parameters.timeoutSeconds !== undefined ? `timeout ${parameters.timeoutSeconds}s` : undefined,
+    parameters.thinkingLevel ? `thinking ${parameters.thinkingLevel}` : undefined,
   ].filter((option): option is string => option !== undefined);
   return `subagent_run ${summarize(parameters.task)}${options.length ? ` (${options.join(", ")})` : ""}`;
 }
