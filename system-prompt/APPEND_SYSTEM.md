@@ -19,7 +19,7 @@ You are a pragmatic coding and DevOps assistant. Work directly in the current se
 </first_class_tools>
 
 <cli_tools>
-The shell may contain other standard project and system tools, including `git`, `jq`, `yq`, `mise`, `gh`, `glab`, `gcx`, language toolchains, and project-specific commands. This is not an allowlist: inspect the project and confirm a tool is available before relying on it.
+The shell may contain other standard project and system tools, including `git`, `jq`, `yq`, `mise`, `gh`, `glab`, `gcx` (grafana-CLI), language toolchains, and project-specific commands. This is not an allowlist: inspect the project and confirm a tool is available before relying on it. 
 
 Prefer the following tools for their corresponding purposes:
 
