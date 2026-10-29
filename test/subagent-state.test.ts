@@ -60,7 +60,7 @@ function verifiesCompletionWatchModes(): void {
   assert.equal(shouldWatchCompletion("background", false), true);
   assert.equal(shouldWatchCompletion("blocking", true), true);
   assert.equal(shouldWatchCompletion("blocking", false), false);
-  assert.equal(countRunningRuns(["running", "completed", "running"]), 2);
+  assert.equal(countRunningRuns(["running", "launching", "completed", "running"]), 3);
 }
 
 test("background and continued workers are monitored", verifiesCompletionWatchModes);

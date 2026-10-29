@@ -6,14 +6,15 @@ This extension delegates one bounded task to an isolated Pi process running insi
 
 - `subagent_run` starts a worker with a required task, optional working directory, narrow tool allowlist, timeout, model, and `thinkingLevel`; it blocks by default and returns only the final report. `thinkingLevel` accepts Pi CLI values `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`, forwarding the selection as `pi --thinking <level>`. Provider/model support can vary. If omitted, the child Pi process uses its normal configured default.
 - `subagent_status` reports a worker's state, elapsed time, last structured activity, artifact paths, and tmux attach command.
-- `subagent_cancel` explicitly terminates a worker's tmux session.
+- `subagent_result` retrieves the final report; its persisted result acknowledges delivery.
+- `subagent_cancel` terminates a running worker and suppresses its pending completion notification.
 
 ## Lifecycle
 
 - Workers run `pi --mode json --print --no-session` within a unique tmux session and write prompt, event, stderr, and completion artifacts to a retained directory under `/tmp`.
 - Blocking calls wait for completion for 300 seconds by default. `onTimeout: "terminate"` stops the worker; `onTimeout: "keep_running"` returns a tracked background run.
-- Background calls return immediately. The parent TUI shows only the count of running workers; worker events are not streamed into parent-agent context.
-- Completion is injected as a custom message only into the session that launched the worker. A different or fresh Pi session never receives it.
+- Background calls return immediately and enforce the same timeout policy. The parent TUI shows only the count of running workers; worker events are not streamed into parent-agent context.
+- Unacknowledged completions are injected at the next prompt boundary only into the session that launched the worker. A different or fresh Pi session never receives them. Pending completion messages queued by an older extension version cannot be removed; restart Pi once when upgrading with such a queue.
 - On session shutdown, active workers remain in tmux and their artifacts are retained. The extension warns in the TUI; a resumed originating session reconciles its own workers.
 
 ## Safety

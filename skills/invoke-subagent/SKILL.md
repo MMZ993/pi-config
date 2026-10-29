@@ -19,9 +19,9 @@ Call `subagent_run` rather than manually launching `pi` in tmux. It creates a tr
     - `openai-codex`: `gpt-6-luna` for small and default tasks (choose low or high effort to fit the task); `gpt-6.1-sol` for advanced planning and advanced code edits.
     - `zai-coding-cn`: `glm-5.3` default for everything (capable and not expensive, no vision); `glm-5.3-flash` for small tasks (exploratory, simple changes) and vision tasks.
   - Use `provider` only when a bare model id is ambiguous across providers.
-- State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized.
+- State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized. Set `cwd` explicitly when the work belongs in another checkout; pass the intended model and reasoning level explicitly rather than asking the worker to infer them.
 - Use the narrowest tool allowlist. The permitted child tools are `read`, `bash`, `edit`, `write`, `fd`, and `rg`; the default is `read`. Add `bash`, `edit`, or `write` only when necessary and explicitly authorized. `subagent_*` and `bg_*` tools are never available to a child.
-- Use `subagent_status` to inspect a run and `subagent_cancel` to stop it. Tmux attachment is for diagnostics only.
+- Use `subagent_status` to inspect a run, `subagent_result` to retrieve and acknowledge its final report, and `subagent_cancel` to stop it. Tmux attachment is for diagnostics only.
 - Never delegate credential access, commits, pushes, deployments, infrastructure changes, or other external side effects without explicit user approval.
 
 ## When to Delegate

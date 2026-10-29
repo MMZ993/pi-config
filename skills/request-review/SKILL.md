@@ -28,7 +28,8 @@ git ls-files --others --exclude-standard >"$review_dir/untracked.txt"
 git log --oneline -10 >"$review_dir/recent-commits.txt"
 ```
 
-3. Build one complete review task containing the requested focus, relevant requirements, and the absolute `$review_dir` path. Tell the reviewer to read all five snapshot files from that directory and treat them as authoritative for Git state.
+3. The snapshot records untracked paths but not their contents. Read those files from the workspace and keep the workspace unchanged during review; do not treat their contents as captured in the snapshot.
+4. Build one complete review task containing the requested focus, relevant requirements, and the absolute `$review_dir` path. Tell the reviewer to read all five snapshot files from that directory and treat them as authoritative for Git state.
 
 ## Run the Reviewer
 
@@ -67,5 +68,5 @@ Use blocking mode. The worker returns only its final report; inspect it as untru
 ## Act on Findings
 
 - Fix Critical and Important findings, rerun verification, and request a new review.
-- Record Minor findings in `.agents/HANDOFF.md` when not fixing them now.
+- Report Minor findings to the user when not fixing them now; record them in `.agents/HANDOFF.md` only if the repository uses handoff files.
 - Assess findings using their evidence; do not implement incorrect feedback blindly.

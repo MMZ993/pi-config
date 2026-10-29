@@ -25,6 +25,6 @@ Implement one focused, low-risk change. Load and follow the available `applicati
 5. If verification fails, load and follow the `debugging` skill before changing code again.
 </workflow>
 
-Do not commit, create a handoff, or request a separate review unless the user explicitly asks.
+Do not commit or create a handoff unless the user explicitly asks. Follow `verify` for review requirements; if the change grows beyond this workflow's scope, stop and recommend `/plan`.
 
 Task: $@

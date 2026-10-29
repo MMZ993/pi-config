@@ -12,9 +12,9 @@ description: Apply a safety-first infrastructure and support workflow for DevOps
 
 ## Execution tiers
 
-### Tier 1 — Read-only
+### Tier 1 — Inspection and dry runs
 
-Run freely. Examples include `terraform plan` and `terraform validate`; Ansible commands with `--check`; `kubectl get`, `describe`, and `diff`; file reads; and Git inspection commands.
+Examples include file reads, Git inspection, `terraform validate` and `plan`, Ansible `--check`, and `kubectl get`, `describe`, and `diff`. Plans and check modes can access live systems or have side effects; they are not proof that an operation is harmless. Follow project-specific execution rules and obtain required approval before accessing live hosts or running these commands.
 
 ### Tier 2 — Write
 

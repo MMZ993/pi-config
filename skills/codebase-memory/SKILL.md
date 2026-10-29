@@ -9,7 +9,7 @@ Use the local `codebase-memory-mcp cli` interface only. Do not start its MCP ser
 
 ## Safety and scope
 
-- Indexing is agent-driven: run `index_repository` autonomously when the project is not indexed or the index is stale; no user confirmation is needed for indexing itself. It writes only a local index under `~/.cache/codebase-memory-mcp/`.
+- When the project is unindexed or stale, request confirmation before `index_repository` as required by the safety net. It writes a local index under `~/.cache/codebase-memory-mcp/`.
 - Use `moderate` mode by default. Use `full` only when semantic/similarity edges are necessary.
 - Never run `codebase-memory-mcp install`, `uninstall`, or `update`. These commands can modify detected agent configurations. CBM updates are managed through dotfiles.
 - Never run `codebase-memory-mcp config set`, `config reset`, `delete_project`, `manage_adr`, or `ingest_traces` unless the user explicitly requests that exact operation.
@@ -25,7 +25,7 @@ codebase-memory-mcp cli list_projects --json
 codebase-memory-mcp cli index_status --project "<project-name>" --json
 ```
 
-If the current repository is not indexed (or `index_status` shows it missing or stale), run the indexing yourself and inform the user that you did:
+If the current repository is not indexed (or `index_status` shows it missing or stale), request confirmation, then index it:
 
 ```bash
 codebase-memory-mcp cli index_repository --repo-path "$PWD" --mode moderate --json

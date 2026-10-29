@@ -60,7 +60,7 @@ export function resolveModelSelection(
   return { provider, modelId };
 }
 
-/** Counts workers that should be shown as active in the shared TUI status. */
+/** Counts running or launching workers that should be shown as active in the shared TUI status. */
 export function countRunningRuns(statuses: string[]): number {
-  return statuses.filter((status) => status === "running").length;
+  return statuses.filter((status) => status === "running" || status === "launching").length;
 }

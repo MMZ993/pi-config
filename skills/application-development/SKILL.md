@@ -23,18 +23,17 @@ description: Apply established application-development conventions when planning
 - Keep each file small and focused. Split files that have grown beyond one cohesive responsibility into appropriately named modules.
 - Give each function, method, and class one purpose. Extract independently changing or separately testable behavior instead of accumulating branches and modes.
 - Keep static data, configuration, schemas, and lookup tables separate from executable logic.
-- Make code read like a book: extract logically grouped operations into small, intention-revealing helpers so the calling code describes *what* happens (for example `retryable = isRetryable(error)`), with the helpers explaining *how*. Not one helper per line — but whenever a block of two or more lines forms one logical step, name it. Reader-first: a maintainer should follow the intent without mentally simulating the implementation.
+- Make code easy to read and follow with intention-revealing names. Extract helpers when they improve clarity, manage complexity, or enable reuse; avoid indirection that does not improve understanding, and do not extract solely because a short block forms a step.
 - Prefer code that is easy to trace locally: make control flow, data transformations, state changes, and side effects explicit.
 - Place I/O, framework calls, and other side effects at the boundaries; keep core decision logic deterministic where practical.
 - Choose the least complex adequate design. Duplication is acceptable when abstraction would obscure behavior; avoid inheritance, recursion, and patterns that add indirection unless they provide a clear, present benefit.
 - Define and enforce input, output, error, and ownership boundaries at module interfaces. Do not let invalid or ambiguous state flow deeper into the system.
 - Preserve existing behavior deliberately: when changing unclear legacy behavior, first characterize it with tests or documented examples.
 
-## Documentation before implementation
+## Documentation
 
-- Write the documentation comment before implementing every function, method, class, module, and other meaningful code unit.
-- Each comment must state the unit's purpose, inputs or arguments, outputs or return value, side effects or mutations, errors, and important constraints when applicable.
-- Keep documentation aligned with the desired behavior and update it with the implementation; do not leave comments that merely restate syntax.
+- Document public contracts and non-obvious behavior, including relevant inputs, outputs, side effects, errors, and constraints.
+- Keep comments aligned with behavior; do not restate syntax or require comments on every helper.
 
 ## Change discipline
 
