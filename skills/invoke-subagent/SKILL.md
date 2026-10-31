@@ -12,13 +12,15 @@ Use `subagent_run` for a bounded task whose working context and intermediate rea
 Call `subagent_run` rather than manually launching `pi` in tmux. It creates a tracked, isolated worker with retained artifacts and session-bound completion delivery.
 
 - Default to `mode: "blocking"`; use `mode: "background"` only when useful work can continue independently.
-- Pick the child model to fit the task; it defaults to the main session's active model.
-  - Use only subscription providers: `openai-codex` and `zai-coding-cn`. `opencode` is pay-as-you-go and off-limits unless the user explicitly requests it.
-  - Prefer the same provider as the main thread.
-  - Approved models (verify the exact id with `pi --list-models` before use, never guess from memory):
-    - `openai-codex`: `gpt-6-luna` for small and default tasks (choose low or high effort to fit the task); `gpt-6.1-sol` for advanced planning and advanced code edits.
-    - `zai-coding-cn`: `glm-5.3` default for everything (capable and not expensive, no vision); `glm-5.3-flash` for small tasks (exploratory, simple changes) and vision tasks.
-  - Use `provider` only when a bare model id is ambiguous across providers.
+- Choose the child model and reasoning level to fit the task, preferring the smallest model and lowest reasoning level likely to handle it:
+  - Use the same provider as the main session: `openai-codex` for GPT models or `zai-coding-cn` for GLM models. If the main session uses another provider or a model not listed below, stop and ask the user which model to use.
+  - Verify exact model IDs with `pi --list-models`; never guess them.
+  - Approved models, ordered from smallest to strongest:
+    - `openai-codex`: `gpt-6-luna` (small), `gpt-6.1-terra` (medium), `gpt-6.1-sol` (strong).
+    - `zai-coding-cn`: `glm-5.3-flash` (small), `glm-5.3` (strong; no vision capabilities).
+  - Do not automatically escalate to a stronger model just because a task is difficult. If the main session uses a stronger approved model, you may use that model for a subagent when the task warrants it.
+  - Do not use a model stronger than the main session's model unless the user explicitly asks.
+  - If in doubt, use the main session's model and reasoning level.
 - State one concrete objective, expected final output, allowed paths, constraints, and whether edits are authorized. Set `cwd` explicitly when the work belongs in another checkout; pass the intended model and reasoning level explicitly rather than asking the worker to infer them.
 - Use the narrowest tool allowlist. The permitted child tools are `read`, `bash`, `edit`, `write`, `fd`, and `rg`; the default is `read`. Add `bash`, `edit`, or `write` only when necessary and explicitly authorized. `subagent_*` and `bg_*` tools are never available to a child.
 - Use `subagent_status` to inspect a run, `subagent_result` to retrieve and acknowledge its final report, and `subagent_cancel` to stop it. Tmux attachment is for diagnostics only.
@@ -41,7 +43,7 @@ Keep small lookups, direct file reads, and work where the investigation path mat
 ### Explore a self-contained question
 
 ```text
-Use subagent_run with read-only tools and a cheap model (openai-codex/gpt-6-luna, low effort) to inspect the Terraform modules under terraform/pve01. Return only: the module that defines vault01, its VMID, and referenced outputs. Do not edit files.
+Use subagent_run with read-only tools and a cheap model (openai-codex/gpt-6-luna for a GPT main session or zai-coding-cn/glm-5.3-flash for a GLM main session, low effort) to inspect the Terraform modules under terraform/pve01. Return only: the module that defines vault01, its VMID, and referenced outputs. Do not edit files.
 ```
 
 ### Perform an independent review
