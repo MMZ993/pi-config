@@ -40,10 +40,14 @@ export default function goalExtension(pi: ExtensionAPI): void {
     pi.appendEntry<GoalStateEntry>(ENTRY_TYPE, { goal });
   };
 
-  pi.on("session_start", async (_event, ctx) => {
+  const restore = (ctx: { sessionManager: { getBranch(): Array<{ customType?: string; data?: unknown }> }; ui: { setStatus(key: string, value: string | undefined): void } }): void => {
     goal = getActiveGoal(ctx.sessionManager.getBranch());
     updateStatus(ctx);
-  });
+  };
+
+  pi.on("session_start", async (_event, ctx) => restore(ctx));
+  // /tree navigation rewrites the active branch; re-derive the goal from the new leaf.
+  pi.on("session_tree", async (_event, ctx) => restore(ctx));
 
   pi.registerCommand("goal", {
     description: "Set a goal for Pi to work toward until /ungoal or completion",

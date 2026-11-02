@@ -6,6 +6,7 @@ Reusable, versioned configuration for the Pi coding agent.
 
 - `extensions/safety-net.ts` — blocks catastrophic shell commands and asks for confirmation before destructive operations.
 - `extensions/goal.ts` — `/goal` persists a session goal and requests progress checks until the latest check receives an exact `WORK DONE`; `/ungoal` disables it and `/showgoal` displays it without prompting Pi.
+- `extensions/self-check.ts` — agent-managed bounded verification gate: the `self_check` tool arms acceptance criteria (`set`), and before settlement the gate asks the agent to verify and report `pass` (with evidence) or `fail`, at most 3 continuations, then it disarms itself as failed-exhausted. `/self-check <condition>|off|status` inspects or overrides it; it refuses to arm while a `/goal` is active and disarms itself if a goal becomes active.
 - `extensions/ask-user.ts` — exposes the `ask_user` tool for one necessary multiple-choice clarification, including a custom-answer option; `/ask-user off|on|status` controls it for the current session only (new sessions default to on).
 - `extensions/tokyonight-header.ts` — replaces Pi's startup logo with a Tokyo Night Pi logo while retaining Pi's built-in resource summary; `/default-header` restores Pi's built-in header.
 - `extensions/system-guidance.ts` and `system-prompt/APPEND_SYSTEM.md` — append package-owned global operating guidance without replacing Pi or project instructions.
@@ -14,7 +15,7 @@ Reusable, versioned configuration for the Pi coding agent.
 - `extensions/copy-all.ts` — adds `/copy-all` to copy the active session's readable conversation transcript to the clipboard.
 - `extensions/file-search.ts` — replaces Pi's built-in `fd` and `rg` tools with system-managed binaries, hardened argument handling, and compact call/result rendering.
 - `skills/` — application development, infrastructure operations, tests, verification, debugging, review, commits, handoffs, Firecrawl research, CBM CLI exploration, and cheap-model exploration via subagents.
-- `prompts/` — `/brainstorm`, `/prepare-rules`, `/survey-codebase`, `/build`, `/plan`, `/dev`, and `/devops`.
+- `prompts/` — `/brainstorm`, `/prepare-rules`, `/survey-codebase`, `/build`, `/plan`, `/dev`, `/devops`, `/recall` (adaptive reconstruction of past session history and outcomes), and `/review-sessions` (find and assess past sessions for workflow improvements).
 - `themes/tokyonight.json` — Tokyo Night color theme for Pi's TUI.
 
 Machine-wide settings and the shared system prompt are managed separately by dotfiles under `~/.pi/agent/`. Credentials, trust decisions, sessions, and installed package directories are not managed here.
