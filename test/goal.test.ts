@@ -120,3 +120,36 @@ test("a stale goal-check prompt does not authorize completion on a later user tu
   assert.equal(result.continue, true);
   assert.equal(entries.at(-1).data.goal, "Ship it");
 });
+
+test("/tree navigation restores the goal from the newly active branch", async () => {
+  const events = new Map<string, (...args: any[]) => Promise<any>>();
+  const commands = new Map<string, { handler: (...args: any[]) => Promise<void> }>();
+  const entries: any[] = [];
+  const statuses = new Map<string, string | undefined>();
+  goalExtension({
+    on: (event: string, handler: (...args: any[]) => Promise<any>) => events.set(event, handler),
+    registerCommand: (name: string, options: { handler: (...args: any[]) => Promise<void> }) => commands.set(name, options),
+    appendEntry: (customType: string, data: unknown) => entries.push({ customType, data }),
+  } as any);
+  const branch: any[] = [];
+  const context = {
+    sessionManager: { getBranch: () => branch },
+    ui: { notify: () => {}, setStatus: (key: string, value: string | undefined) => statuses.set(key, value) },
+  };
+
+  await commands.get("goal")!.handler("Ship it", context as any);
+  branch.push(...entries);
+  assert.equal(statuses.get("goal"), "goal: Ship it");
+
+  // Navigate to an older branch point before the goal was set.
+  branch.length = 0;
+  await events.get("session_tree")!({ newLeafId: "old" }, context);
+  assert.equal(statuses.get("goal"), undefined);
+  assert.equal((await events.get("agent_before_settle")!({ entries: [], context: { llmMessages: [], contextEntries: [] } }, context)), undefined);
+
+  // Navigate forward again: the goal is restored.
+  branch.push({ type: "custom", customType: "goal-state", data: { goal: "Ship it" } });
+  await events.get("session_tree")!({ newLeafId: "new" }, context);
+  assert.equal(statuses.get("goal"), "goal: Ship it");
+  assert.equal((await events.get("agent_before_settle")!({ entries: [], context: { llmMessages: [], contextEntries: [] } }, context)).continue, true);
+});
