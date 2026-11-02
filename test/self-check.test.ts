@@ -14,7 +14,7 @@ type Harness = {
   context: any;
 };
 
-function setup(loadGoalToo = false): Harness {
+function setup(loadGoalToo = false, goalFirst = false): Harness {
   const harness: Harness = {
     events: new Map(),
     commands: new Map(),
@@ -45,7 +45,28 @@ function setup(loadGoalToo = false): Harness {
     appendEntry: (customType: string, data: unknown) => harness.entries.push({ customType, data }),
   };
   selfCheckExtension(api);
-  if (loadGoalToo) goalExtension({ ...api, on: (event: string, handler: any) => { const existing = harness.events.get(event); harness.events.set(event, async (...args: any[]) => { if (existing) await existing(...args); return handler(...args); }); } } as any);
+  if (loadGoalToo) {
+    // Chain both extensions' handlers in the requested registration order.
+    // Returning undefined preserves the earlier handler's boundary decision, as in Pi.
+    const register = (event: string, handler: any) => {
+      const existing = harness.events.get(event);
+      harness.events.set(event, async (...args: any[]) => {
+        const prior = existing ? await existing(...args) : undefined;
+        const result = await handler(...args);
+        return result ?? prior;
+      });
+    };
+    const goalApi: any = { ...api, on: register };
+    if (goalFirst) {
+      // Rebuild so goal's handler runs first: re-register self-check onto a fresh map first.
+      const selfCheckHandlers = new Map(harness.events);
+      harness.events.clear();
+      goalExtension({ ...api, on: (event: string, handler: any) => harness.events.set(event, handler) } as any);
+      for (const [event, handler] of selfCheckHandlers) register(event, handler);
+    } else {
+      goalExtension(goalApi);
+    }
+  }
   return harness;
 }
 
@@ -235,12 +256,17 @@ test("a repeated identical set is rejected and never resets the attempt counter"
   assert.equal(await settle(h, checkResponse("nope")), undefined);
 });
 
-test("arming a different check replaces it deliberately while keeping the budget", async () => {
+test("arming a different check requires explicit replace=true and keeps the budget", async () => {
   const h = setup();
   await arm(h, "tests pass");
   await settle(h, userTurn("started")); // iterations 1
 
-  const replaced = await arm(h, "build succeeds");
+  const rejected = await arm(h, "build succeeds");
+  assert.match(rejected.content[0].text, /replace=true/);
+  assert.equal(h.entries.at(-1).data.check, "tests pass");
+  assert.equal(h.entries.at(-1).data.iterations, 1);
+
+  const replaced = await h.tool!.execute("t1", { action: "set", check: "build succeeds", replace: true }, undefined, undefined, h.context);
   assert.match(replaced.content[0].text, /replaced/);
   assert.match(replaced.content[0].text, /preserved/);
   assert.equal(h.entries.at(-1).data.check, "build succeeds");
@@ -273,6 +299,66 @@ test("status reports state; set without a check is rejected", async () => {
   const armed = await call(h, { action: "status" });
   assert.match(armed.content[0].text, /tests pass/);
 });
+
+test("reload restores an in-progress verification so the agent can pass immediately", async () => {
+  const h = setup();
+  h.seeded.push({ customType: "self-check-state", data: { check: "tests pass", iterations: 2, phase: "verifying" } });
+  await h.events.get("session_start")!({}, h.context);
+  assert.match(h.statuses.get("self-check")!, /\(2\/3\)/);
+
+  const pass = await call(h, { action: "pass", evidence: "suite green after reload" });
+  assert.match(pass.content[0].text, /passed and disarmed/);
+  assert.equal(h.entries.at(-1).data.phase, "passed");
+});
+
+test("restored terminal state keeps its outcome visible in status without reactivating", async () => {
+  const h = setup();
+  h.seeded.push({ customType: "self-check-state", data: { check: null, iterations: 3, phase: "exhausted", note: "flaky suite" } });
+  await h.events.get("session_start")!({}, h.context);
+  assert.equal(h.statuses.get("self-check"), undefined);
+  assert.equal(await settle(h, userTurn("new turn")), undefined);
+
+  const status = await call(h, { action: "status" });
+  assert.match(status.content[0].text, /last outcome: exhausted: flaky suite/);
+});
+
+test("the limit is unconditional: a new user turn cannot push past three continuations", async () => {
+  const h = setup();
+  await arm(h, "tests pass");
+  assert.equal((await settle(h, userTurn("started"))).continue, true);
+  assert.equal((await settle(h, userTurn("more user work"))).continue, true);
+  assert.equal((await settle(h, checkResponse("nope"))).continue, true);
+  assert.equal(h.entries.at(-1).data.iterations, 3);
+
+  // Fourth settlement of any kind: exhausted, never a fourth continuation.
+  const last = await settle(h, userTurn("even more user work"));
+  assert.equal(last, undefined);
+  assert.equal(h.entries.at(-1).data.phase, "exhausted");
+});
+
+test("the final verification attempt instructs the agent to report remaining failures", async () => {
+  const h = setup();
+  await arm(h, "tests pass");
+  await settle(h, userTurn("started"));
+  await settle(h, checkResponse("nope"));
+  const result = await settle(h, checkResponse("nope"));
+  assert.equal(result.continue, true);
+  assert.match(result.entries.at(-1).content, /final verification attempt/);
+  assert.match(result.entries.at(-1).content, /explain the remaining failure/);
+});
+
+for (const goalFirst of [false, true]) {
+  test(`an active /goal cancels an armed check regardless of registration order (goal first: ${goalFirst})`, async () => {
+    const h = setup(true, goalFirst);
+    await arm(h, "tests pass");
+    await h.commands.get("goal")!.handler("ship it", h.context);
+    const result = await settle(h, userTurn("working"));
+    assert.match(h.notifications.at(-1)!.message, /cancelled .*\/goal/);
+    assert.equal(h.entries.at(-1).data.phase, "cancelled-goal");
+    // The goal loop still owns the boundary; its continuation decision survives.
+    assert.equal(result.continue, true);
+  });
+}
 
 test("an active /goal blocks arming, and a goal becoming active disarms an armed check", async () => {
   const h = setup(true);

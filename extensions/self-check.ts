@@ -9,6 +9,8 @@ const STATE_ENTRY = "self-check-state";
 const CHECK_CUSTOM_TYPE = "self-check-check";
 const GOAL_STATE_ENTRY = "goal-state";
 const MAX_ITERATIONS = 3;
+/** All valid phases; unknown stored values fall back to "armed". */
+const KNOWN_PHASES: readonly SelfCheckPhase[] = ["armed", "verifying", "passed", "failed", "exhausted", "cleared", "cancelled-goal"];
 /** Phases that represent a finished lifecycle; they never resume verification. */
 const TERMINAL_PHASES: readonly SelfCheckPhase[] = ["passed", "failed", "exhausted", "cleared", "cancelled-goal"];
 
@@ -22,7 +24,7 @@ function latestState(branch: Branch): SelfCheckState | null {
     return {
       check: typeof data.check === "string" && data.check.trim() ? data.check : null,
       iterations: typeof data.iterations === "number" && Number.isInteger(data.iterations) && data.iterations >= 0 ? data.iterations : 0,
-      phase: (TERMINAL_PHASES as readonly string[]).includes(String(data.phase)) ? (data.phase as SelfCheckPhase) : "armed",
+      phase: (KNOWN_PHASES as readonly string[]).includes(String(data.phase)) ? (data.phase as SelfCheckPhase) : "armed",
       note: typeof data.note === "string" ? data.note : undefined,
     };
   }
@@ -66,6 +68,8 @@ function notify(ctx: Ctx, message: string, level: "info" | "warning" | "error" =
  */
 export default function selfCheckExtension(pi: ExtensionAPI): void {
   let state: SelfCheckState | null = null;
+  /** Last known state, kept for status/debugging after the check disarms or a terminal state is restored. */
+  let lastOutcome: SelfCheckState | null = null;
 
   const active = (): boolean => state !== null && state.check !== null;
 
@@ -86,27 +90,40 @@ export default function selfCheckExtension(pi: ExtensionAPI): void {
 
   const restore = (ctx: Ctx): void => {
     state = restored(ctx.sessionManager.getBranch());
+    if (!state) {
+      const last = latestState(ctx.sessionManager.getBranch());
+      lastOutcome = last ?? null;
+    } else {
+      lastOutcome = state;
+    }
     updateStatus(ctx);
   };
 
   const describe = (): string => {
-    if (!state) return "No self-check armed.";
+    if (!state) {
+      const last = lastOutcome;
+      return last ? `No self-check armed (last outcome: ${last.phase}${last.note ? `: ${last.note}` : ""}).` : "No self-check armed.";
+    }
     if (active()) return `Self-check armed (${state.iterations}/${MAX_ITERATIONS} continuations used): ${state.check}`;
     return `No self-check armed (last outcome: ${state.phase}${state.note ? `: ${state.note}` : ""}).`;
   };
 
   /**
    * Arms or replaces the check. Arming the same check again is rejected so repeated
-   * calls cannot reset the budget; arming a different check replaces it but keeps the
-   * used budget so re-arming cannot bypass the continuation limit.
+   * calls cannot reset the budget; arming a different check replaces it only when the
+   * caller explicitly passes replace=true, and the used budget is kept so replacement
+   * cannot bypass the continuation limit.
    */
-  const arm = (procedure: string, ctx: Ctx): { ok: boolean; message: string } => {
+  const arm = (procedure: string, replace: boolean, ctx: Ctx): { ok: boolean; message: string } => {
     if (goalActive(ctx.sessionManager.getBranch())) {
       notify(ctx, "A /goal is active; the self-check stays off so only one settle loop runs. Clear the goal with /ungoal first.", "warning");
       return { ok: false, message: "Self-check not armed: a /goal is active, and only one settle loop may run. Clear it with /ungoal, or fold this verification into the goal text." };
     }
     if (active() && state!.check === procedure) {
       return { ok: false, message: `This exact check is already armed (${state!.iterations}/${MAX_ITERATIONS} continuations used); the attempt budget is preserved and not reset.` };
+    }
+    if (active() && !replace) {
+      return { ok: false, message: `A different check is already armed: ${state!.check}. Call set again with replace=true to deliberately replace it (the used continuation budget is kept), or clear first.` };
     }
     if (active()) {
       save({ check: procedure, iterations: state!.iterations, phase: "armed" }, ctx);
@@ -137,7 +154,7 @@ export default function selfCheckExtension(pi: ExtensionAPI): void {
         ctx.ui.notify(describe(), "info");
         return;
       }
-      const result = arm(input, ctx);
+      const result = arm(input, false, ctx);
       ctx.ui.notify(result.message, result.ok ? "info" : "warning");
     },
   });
@@ -155,6 +172,9 @@ export default function selfCheckExtension(pi: ExtensionAPI): void {
     })),
     reason: Type.Optional(Type.String({
       description: "For fail: why verification did not succeed. Optional for fail.",
+    })),
+    replace: Type.Optional(Type.Boolean({
+      description: "For set: must be true to deliberately replace an already-armed check with different criteria. The used continuation budget is preserved.",
     })),
   });
 
@@ -179,7 +199,7 @@ export default function selfCheckExtension(pi: ExtensionAPI): void {
         if (!procedure) {
           return { content: [{ type: "text", text: "self_check set requires a `check`: the acceptance condition plus how you will verify it." }], details: { armed: false, reason: "missing-check" } };
         }
-        const result = arm(procedure, ctx);
+        const result = arm(procedure, params.replace === true, ctx);
         if (!result.ok) {
           return { content: [{ type: "text", text: result.message }], details: { armed: false, reason: goalActive(ctx.sessionManager.getBranch()) ? "goal-active" : "already-armed" } };
         }
@@ -218,7 +238,7 @@ export default function selfCheckExtension(pi: ExtensionAPI): void {
         notify(ctx, "Self-check disarmed.", "info");
         return { content: [{ type: "text", text: wasArmed ? "Self-check disarmed." : "Self-check was not armed." }], details: { armed: false } };
       }
-      return { content: [{ type: "text", text: describe() }], details: { armed: active(), iterations: state?.iterations ?? 0, max: MAX_ITERATIONS, phase: state?.phase } };
+      return { content: [{ type: "text", text: describe() }], details: { armed: active(), iterations: state?.iterations ?? 0, max: MAX_ITERATIONS, phase: state?.phase, lastOutcome: state ? undefined : lastOutcome } };
     },
   });
 
@@ -233,13 +253,9 @@ export default function selfCheckExtension(pi: ExtensionAPI): void {
       return;
     }
 
-    const latestPromptEntry = [...event.context.contextEntries].reverse().find((entry) =>
-      entry.messages.some((message) => message.role === "user") ||
-      (entry.sourceEntry.type === "custom_message" && entry.sourceEntry.customType === CHECK_CUSTOM_TYPE));
-    const isCheckResponse = latestPromptEntry?.sourceEntry.type === "custom_message" &&
-      latestPromptEntry.sourceEntry.customType === CHECK_CUSTOM_TYPE;
-
-    if (isCheckResponse && state!.iterations >= MAX_ITERATIONS) {
+    if (state!.iterations >= MAX_ITERATIONS) {
+      // Unconditional limit: once MAX continuations have been used, no further
+      // continuation is ever injected, regardless of what the latest prompt was.
       const check = state!.check;
       disarm("exhausted", `verification not confirmed after ${MAX_ITERATIONS} continuations: ${check}`, ctx);
       notify(ctx, `Self-check exhausted its ${MAX_ITERATIONS}-continuation budget and disarmed. Verification was NOT successful: ${check}`, "error");
@@ -248,13 +264,16 @@ export default function selfCheckExtension(pi: ExtensionAPI): void {
 
     const next: SelfCheckState = { check: state!.check, iterations: state!.iterations + 1, phase: "verifying" };
     save(next, ctx);
+    const finalAttempt = next.iterations === MAX_ITERATIONS
+      ? ` This is the final verification attempt: if the check still does not pass, you must clearly explain the remaining failure and its cause to the user in your final response.`
+      : "";
     return {
       entries: [
         ...event.entries,
         {
           type: "custom_message" as const,
           customType: CHECK_CUSTOM_TYPE,
-          content: `Self-check verification (attempt ${next.iterations} of ${MAX_ITERATIONS}): ${next.check}\n\nRun this verification against the current state now, using real evidence. When it passes, call the self_check tool with action=pass and the evidence. When it does not pass, fix the problem and, if you then verify success, call self_check(pass); if it cannot pass, call self_check(fail) with the reason. Do not claim success without evidence.`,
+          content: `Self-check verification (attempt ${next.iterations} of ${MAX_ITERATIONS}): ${next.check}\n\nRun this verification against the current state now, using real evidence. When it passes, call the self_check tool with action=pass and the evidence. When it does not pass, fix the problem and, if you then verify success, call self_check(pass); if it cannot pass, call self_check(fail) with the reason. Do not claim success without evidence.${finalAttempt}`,
           display: false,
         },
       ],
