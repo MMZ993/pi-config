@@ -55,7 +55,7 @@ All errors go to stderr with exit code 1. Success goes to stdout with exit code 
 ### tools
 
 ```bash
-agents-tools tools list [--pretty]
+agents-tools tools list [--group <group> | --all] [--pretty]
 agents-tools tools schema <name> [--pretty]
 agents-tools tools call <name> [--arg key=value]... [--json '{}'] [--pretty]
 ```
@@ -74,6 +74,9 @@ agents-tools health [--pretty]     # GET /healthz, no authentication
 # Discover available tools for this principal
 agents-tools tools list --pretty
 
+# List tools in one group
+agents-tools tools list --group spotify --pretty
+
 # Inspect one tool's input schema to learn how to call it
 agents-tools tools schema spotify_search --pretty
 
@@ -89,7 +92,7 @@ agents-tools tools call spotify_search --json '{"query":"daft punk","type":"arti
 
 ## How it works
 
-Each invocation runs a fresh MCP session: `initialize` (captures the `Mcp-Session-Id` header) → `notifications/initialized` → `tools/list` or `tools/call`. The broker returns plain JSON (`json_response=True`), so no SSE parsing is required.
+Each invocation runs a fresh MCP session: `initialize` (captures the `Mcp-Session-Id` header) → `notifications/initialized` → `tools/list` or `tools/call`. Group discovery calls `broker_discover` and shows only tools allowed to the authenticated principal. `tools list --all` returns the complete MCP list. The broker returns plain JSON (`json_response=True`), so no SSE parsing is required.
 
 ## Project layout
 

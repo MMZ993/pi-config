@@ -16,9 +16,14 @@ The `agents-tools` CLI connects to a private MCP broker providing policy-control
 
 ## Discover and use
 
+List the groups visible to the authenticated principal, then inspect a group:
+
 ```bash
 agents-tools tools list --pretty
+agents-tools tools list --group grocy --pretty
 ```
+
+Use `agents-tools tools list --all` only when the complete MCP tool list and schemas are needed. Group discovery requires the broker's `broker_discover` tool; it does not grant additional permissions.
 
 Choose a relevant tool and inspect its schema before calling it:
 
